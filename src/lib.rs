@@ -3,6 +3,8 @@ mod audio;
 mod loading;
 mod menu;
 mod player;
+mod map;
+mod mesh;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
@@ -15,6 +17,12 @@ use bevy::app::App;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use player::{Player, LookData};
+
+type FixedPoint = fixed::types::I16F16;
+type WaveObject = bevy_wave_collapse::objects::WaveObject<FixedPoint, mesh::MeshTextureUVS, u64, ()>;
+type WaveMesh = bevy_wave_collapse::prelude::WaveMesh<FixedPoint, mesh::MeshTextureUVS>;
+type WaveBuilder = bevy_wave_collapse::prelude::WaveBuilder<FixedPoint, mesh::MeshTextureUVS>;
+type RVec3 = bevy_wave_collapse::prelude::RVec3<FixedPoint>;
 
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
@@ -41,7 +49,8 @@ impl Plugin for GamePlugin {
             .add_plugin(MenuPlugin)
             .add_plugin(ActionsPlugin)
             .add_plugin(InternalAudioPlugin)
-            .add_plugin(PlayerPlugin);
+            .add_plugin(PlayerPlugin)
+            .add_plugin(map::MapPlugin);
 
         #[cfg(debug_assertions)]
         {

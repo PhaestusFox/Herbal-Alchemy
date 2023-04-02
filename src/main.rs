@@ -8,6 +8,7 @@ use bevy::DefaultPlugins;
 use herbal_alchemy::GamePlugin;
 use std::io::Cursor;
 use winit::window::Icon;
+use bevy_pkv::PkvStore;
 
 fn main() {
     App::new()
@@ -25,6 +26,7 @@ fn main() {
         .add_plugin(GamePlugin)
         .add_system(set_window_icon.on_startup())
         .add_system(herbal_alchemy::setup_camera.on_startup())
+        .insert_resource(PkvStore::new("PhoxCorp", "HerbalAlchemy"))
         .run();
 }
 

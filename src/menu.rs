@@ -2,6 +2,7 @@ use crate::loading::FontAssets;
 use crate::GameState;
 use crate::player::PlayerSettings;
 use bevy::prelude::*;
+use bevy_pkv::PkvStore;
 
 pub struct MenuPlugin;
 
@@ -105,8 +106,9 @@ fn setup_settings_menu(
     mut commands: Commands,
     font_assets: Res<FontAssets>,
     button_colors: Res<ButtonColors>,
-    settigns: Res<PlayerSettings>,
+    pkv: Res<PkvStore>,
 ) {
+    let settigns = pkv.get::<PlayerSettings>("player settings").expect("player settings to load");
     commands.spawn((NodeBundle {
         style: MENU_BOX,
         background_color: button_colors.menu.into(),
@@ -339,6 +341,7 @@ fn cleanup_menu(mut commands: Commands, button: Query<Entity, With<MenuButtonCle
 }
 
 fn click_settings_button(
+    mut pkv: ResMut<PkvStore>,
     button_colors: Res<ButtonColors>,
     mut state: ResMut<NextState<GameState>>,
     mut interaction_query: Query<
@@ -346,8 +349,8 @@ fn click_settings_button(
         (Changed<Interaction>, With<MenuButton>),
     >,
     mut text: Query<(&mut Text, &MenuButton)>,
-    mut settings: ResMut<PlayerSettings>,
 ) {
+    let mut settings = pkv.get::<PlayerSettings>("player settings").expect("Settings to exist");
     for (interaction, mut color, button) in &mut interaction_query {
         match *interaction {
             Interaction::Clicked => {
@@ -359,7 +362,7 @@ fn click_settings_button(
                         for (mut text, button) in text.iter_mut() {
                             match button {
                                 MenuButton::ChangeSensitivity(_) => {
-                                    text.sections[0].value = format!("Sensitivity: {:.04}", settings.sensitivity);
+                                    text.sections[0].value = format!("Sensitivity: {:.03}", settings.sensitivity);
                                     break;
                                 },
                                 _ => {}
@@ -389,4 +392,5 @@ fn click_settings_button(
             }
         }
     }
+    pkv.set("player settings", &settings).expect("Can Save Settings");
 }

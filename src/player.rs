@@ -1,15 +1,16 @@
-use crate::actions::Actions;
 use crate::loading::TextureAssets;
 use crate::GameState;
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
+use bevy_pkv::PkvStore;
+use serde::{Serialize, Deserialize};
 
 pub struct PlayerPlugin;
 
 #[derive(Component)]
 pub struct Player;
 
-#[derive(Resource)]
+#[derive(Resource, Serialize, Deserialize)]
 pub struct PlayerSettings { 
     pub speed: f32,
     pub sensitivity: f32
@@ -17,7 +18,7 @@ pub struct PlayerSettings {
 
 impl Default for PlayerSettings {
     fn default() -> Self {
-        PlayerSettings { speed: 10., sensitivity: 0.005 }
+        PlayerSettings { speed: 1., sensitivity: 0.005 }
     }
 }
 
@@ -41,12 +42,30 @@ fn move_mode(input: Res<Input<MouseButton>>) -> bool {
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-        .init_resource::<PlayerSettings>()
         .add_system(spawn_cube.in_schedule(OnEnter(GameState::Playing)))
             .add_system(move_player.in_set(OnUpdate(GameState::Playing))
             .run_if(move_mode))
             .add_system(player_look.in_set(OnUpdate(GameState::Playing))
-            .run_if(look_mode));
+            .run_if(look_mode))
+        .add_system(setup_settings.on_startup());
+    }
+}
+
+fn setup_settings(mut pkv: ResMut<PkvStore>) {
+    if let Err(e) = pkv.get::<PlayerSettings>("player settings") {
+        match e {
+            bevy_pkv::GetError::NotFound => {
+                if let Err(e) = pkv.set("player settings", &PlayerSettings::default()) {
+                    error!("{}", e);
+                }
+            },
+            e => {
+                error!("PKV Error for Player Settings {}", e);
+                if let Err(e) = pkv.set("player settings", &PlayerSettings::default()) {
+                    error!("{}", e);
+                }
+            }
+        }
     }
 }
 
@@ -61,6 +80,7 @@ fn spawn_cube(mut commands: Commands, textures: Res<TextureAssets>, mut meshes: 
             transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
             ..Default::default()
         });
+    commands.insert_resource(AmbientLight{ brightness: 0.5, color: Color::WHITE});
 }
 
 fn move_player(
@@ -68,8 +88,9 @@ fn move_player(
     mut player_query: Query<(&mut Transform, &Children), With<Player>>,
     camera: Query<&Transform, Without<Player>>,
     mut mouse_move: EventReader<MouseMotion>,
-    setting: Res<PlayerSettings>,
+    pkv: Res<PkvStore>
 ) {
+    let setting = pkv.get::<PlayerSettings>("player settings").expect("player settings are loaded");
     let mut player_movement = Vec2::ZERO;
     for MouseMotion{delta} in mouse_move.iter() {
         player_movement += *delta;
@@ -80,24 +101,23 @@ fn move_player(
             continue;
         };
         let forward = player_movement.y * -Vec3::new(local_z.x, 0., local_z.z) + player_movement.x * -Vec3::new(local_z.z, 0., -local_z.x);
-        player_transform.translation += forward.normalize_or_zero() * setting.speed * time.delta_seconds();
+        player_transform.translation += forward * setting.speed * time.delta_seconds();
     }
 }
 
 fn player_look(
     mut player: Query<(&mut Transform, &mut LookData)>,
     mut mouse_move: EventReader<MouseMotion>,
-    setting: Res<PlayerSettings>,
+    pkv: Res<PkvStore>,
 ) {
+    let setting = pkv.get::<PlayerSettings>("player settings").expect("player settings is loaded");
     let mut total = Vec2::ZERO;
     for MouseMotion{delta} in mouse_move.iter() {
         total += *delta;
     }
     for (mut transfrom, mut data) in player.iter_mut() {
-        data.yaw -= total.x * setting.sensitivity;
-        // data.yaw = data.yaw.clamp(-1.5708, 1.5708);
-        data.pitch -= total.y * setting.sensitivity;
-        // data.pitch = data.pitch.clamp(-1.5708, 1.5708);
+        data.yaw += total.x * setting.sensitivity;
+        data.pitch += total.y * setting.sensitivity;
         data.pitch = data.pitch.clamp(0., 1.5);
         let cos = data.yaw.cos();
         let sin = data.yaw.sin();
