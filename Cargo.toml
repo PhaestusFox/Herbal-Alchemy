@@ -1,8 +1,8 @@
 [package]
-name = "bevy_game" # ToDo
+name = "herbal-alchemy"
 version = "0.1.0"
 publish = false
-authors = ["Niklas Eicker <git@nikl.me>"] # ToDo: you are the author ;)
+authors = ["Phaestus Fox"]
 edition = "2021"
 exclude = ["dist", "build", "assets", "credits"]
 
