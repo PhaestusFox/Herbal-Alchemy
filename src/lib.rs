@@ -14,6 +14,7 @@ use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
+use player::{Player, LookData};
 
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
@@ -25,8 +26,10 @@ enum GameState {
     Loading,
     // During this State the actual game logic is executed
     Playing,
-    // Here the menu is drawn and waiting for player interaction
-    Menu,
+    // Here the main menu is drawn and waiting for player interaction
+    MainMenu,
+    // Here the player can change settings
+    SettingsMenu
 }
 
 pub struct GamePlugin;
@@ -46,4 +49,14 @@ impl Plugin for GamePlugin {
                 .add_plugin(LogDiagnosticsPlugin::default());
         }
     }
+}
+
+
+pub fn setup_camera(mut commands: Commands) {
+    commands.spawn((Player, SpatialBundle::default())).with_children(|p| {
+        p.spawn((Camera3dBundle {
+            transform: Transform::from_translation(Vec3::Z * 5.),
+            ..Default::default()
+        }, LookData::default()));
+    });
 }

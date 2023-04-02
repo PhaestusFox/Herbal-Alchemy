@@ -24,6 +24,7 @@ fn main() {
         }))
         .add_plugin(GamePlugin)
         .add_system(set_window_icon.on_startup())
+        .add_system(herbal_alchemy::setup_camera.on_startup())
         .run();
 }
 
