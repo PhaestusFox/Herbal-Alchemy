@@ -16,7 +16,8 @@ impl Plugin for LoadingPlugin {
         .add_collection_to_loading_state::<_, FontAssets>(GameState::Loading)
         .add_collection_to_loading_state::<_, AudioAssets>(GameState::Loading)
         .add_collection_to_loading_state::<_, TextureAssets>(GameState::Loading)
-        .add_collection_to_loading_state::<_, WaveMeshAssets>(GameState::Loading);
+        .add_collection_to_loading_state::<_, WaveMeshAssets>(GameState::Loading)
+        .add_collection_to_loading_state::<_, UiAssets>(GameState::Loading);
     }
 }
 
@@ -39,8 +40,6 @@ pub struct AudioAssets {
 pub struct TextureAssets {
     #[asset(path = "textures/bevy.png")]
     pub texture_bevy: Handle<Image>,
-    #[asset(path = "textures/mesh.png")]
-    pub wave_mesh_texture: Handle<Image>,
 }
 
 #[derive(AssetCollection, Resource)]
@@ -51,4 +50,10 @@ pub struct WaveMeshAssets {
     pub empty_table: Handle<Mesh>,
     #[asset(path = "objs/Pots.obj#Island")]
     pub empty_island: Handle<Mesh>,
+}
+
+#[derive(AssetCollection, Resource)]
+pub struct UiAssets {
+    #[asset(path = "textures/ui_outline.png")]
+    pub ui_outline: Handle<Image>,
 }

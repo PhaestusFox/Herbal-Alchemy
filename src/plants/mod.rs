@@ -1,4 +1,5 @@
 use bevy::{prelude::*, ecs::system::EntityCommands};
+use serde::{Serialize, Deserialize};
 use crate::prelude::*;
 use crate::map::MapCell;
 mod Palm;
@@ -28,7 +29,7 @@ trait PlantTrait: Send + Sync {
     fn spawn(cell: &MapCell, parent: EntityCommands); 
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum Plant {
     Palm
 }
@@ -53,8 +54,8 @@ enum GrothStage {
     Dead,
 }
 
-#[derive(Debug, Reflect)]
-enum PlantPart {
+#[derive(Debug, Reflect, Serialize, Deserialize, Clone, Copy)]
+pub enum PlantPart {
     Seed = 1,
     Leaf = 1 << 1,
     Root = 1 << 2,

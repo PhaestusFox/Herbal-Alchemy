@@ -42,6 +42,7 @@ const MENU_BOX: Style = Style {
     margin: UiRect::all(Val::Auto),
     size: Size {width: Val::Percent(50.), height: Val::Percent(75.)},
     flex_wrap: FlexWrap::Wrap,
+    position_type: PositionType::Absolute,
     ..Style::DEFAULT
 };
 

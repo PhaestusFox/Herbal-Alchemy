@@ -23,12 +23,13 @@ fn main() {
             }),
             ..default()
         }))
+        .insert_resource(PkvStore::new("PhoxCorp", "HerbalAlchemy"))
         .add_plugin(GamePlugin)
         .add_system(set_window_icon.on_startup())
         .add_system(herbal_alchemy::setup_camera.on_startup())
-        .insert_resource(PkvStore::new("PhoxCorp", "HerbalAlchemy"))
         .add_plugin(bevy_editor_pls::EditorPlugin::default())
         .add_plugins(bevy_mod_picking::DefaultPickingPlugins)
+        .add_plugin(bevy_ninepatch::NinePatchPlugin::<()>::default())
         .run();
 }
 

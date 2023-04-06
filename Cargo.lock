@@ -822,6 +822,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_ninepatch"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ef7431c92a46047d6776602eec6fc2f1750e65c74e60333e247ed6a3a9d0e6e"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_pbr"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2115,6 +2124,7 @@ dependencies = [
  "bevy_editor_pls",
  "bevy_kira_audio",
  "bevy_mod_picking",
+ "bevy_ninepatch",
  "bevy_pkv",
  "bevy_wave_collapse",
  "embed-resource",
