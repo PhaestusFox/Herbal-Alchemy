@@ -58,6 +58,12 @@ bevy_wave_collapse = {git = "https://github.com/PhaestusFox/bevy_wave_collapse.g
 serde = "*"
 bevy_pkv = "*"
 fixed = "*"
+bevy_editor_pls = "*"
+bevy-inspector-egui = "*"
+uuid = "*"
+strum = "*"
+strum_macros = "*"
+bevy_mod_picking = "*"
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.28", default-features = false }

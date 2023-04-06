@@ -1,12 +1,11 @@
-use std::str::FromStr;
-
-use bevy::prelude::{Handle, Assets, warn};
+use bevy::prelude::{Handle, Assets};
 use std::collections::HashMap;
 use bevy_wave_collapse::{objects::Connection, prelude::{RVec3, BakeError}};
 
 use crate::{WaveObject, WaveMesh, WaveBuilder, FixedPoint};
+use strum_macros::EnumString;
 
-#[derive(Debug, Hash, PartialEq, Clone, Copy, Default)]
+#[derive(Debug, Hash, PartialEq, Clone, Copy, Default, EnumString, Eq)]
 pub enum MeshTextureUVS {
     Legs = 0,
     #[default]
@@ -14,21 +13,9 @@ pub enum MeshTextureUVS {
     Wood = 2,
     Sand = 7,
     Water = 8,
-}
-
-impl FromStr for MeshTextureUVS {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        warn!("{}", s);
-        match &s.to_lowercase()[..] {
-            "wood" => Ok(MeshTextureUVS::Wood),
-            "pot" => Ok(MeshTextureUVS::Pot),
-            "legs" => Ok(MeshTextureUVS::Legs),
-            "sand" => Ok(MeshTextureUVS::Sand),
-            "water" => Ok(MeshTextureUVS::Water),
-            _ => Err(format!("'{}' is not a configured texture", s)),
-        }
-    }
+    PalmTrunk = 9,
+    PalmLeaf = 10,
+    PalmNut = 11,
 }
 
 impl bevy_wave_collapse::vertex::VertexUV for MeshTextureUVS {
@@ -44,10 +31,10 @@ impl Table {
         WaveObject {
             meshes,
             build_fn: Self::build,
-            can_connect_fn: |c| {false}
+            can_connect_fn: |_| {false}
         }
     }
-    fn build(obj: &WaveObject, offset: RVec3<FixedPoint>, assets: &Assets<WaveMesh>, builder: &mut WaveBuilder, data: &(), seed: u64) -> Result<(), BakeError> {
+    fn build(obj: &WaveObject, offset: RVec3<FixedPoint>, assets: &Assets<WaveMesh>, builder: &mut WaveBuilder, _: &u64, _: u64) -> Result<(), BakeError> {
         let wave = assets.get(obj.meshes.get(&Connection::new("Table")).unwrap()).unwrap();
         builder.bake(offset, wave)
     }
@@ -60,10 +47,10 @@ impl Island {
         WaveObject {
             meshes,
             build_fn: Self::build,
-            can_connect_fn: |c| {false}
+            can_connect_fn: |_| {false}
         }
     }
-    fn build(obj: &WaveObject, offset: RVec3<FixedPoint>, assets: &Assets<WaveMesh>, builder: &mut WaveBuilder, data: &(), seed: u64) -> Result<(), BakeError> {
+    fn build(obj: &WaveObject, offset: RVec3<FixedPoint>, assets: &Assets<WaveMesh>, builder: &mut WaveBuilder, _: &u64, _: u64) -> Result<(), BakeError> {
         let wave = assets.get(obj.meshes.get(&Connection::new("Island")).unwrap()).unwrap();
         builder.bake(offset, wave)
     }

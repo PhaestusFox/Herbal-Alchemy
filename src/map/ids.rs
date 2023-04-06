@@ -329,14 +329,6 @@ impl CellId {
         }
     }
     #[inline(always)]
-    pub fn from_vec3(vec: Vec3) -> CellId {
-        CellId::from_xyz(vec.x, vec.y, vec.z)
-    }
-    #[inline(always)]
-    pub fn from_translation(translation: Vec3) -> CellId {
-        CellId::from_xyz(translation.x, translation.y, translation.z)
-    }
-    #[inline(always)]
     pub fn get_in_range(&self, range: u32) -> impl Iterator<Item = CellId> {
         OffsetIter {
             offset: *self,

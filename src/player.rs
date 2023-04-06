@@ -42,7 +42,7 @@ fn move_mode(input: Res<Input<MouseButton>>) -> bool {
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-        .add_system(spawn_cube.in_schedule(OnEnter(GameState::Playing)))
+            .insert_resource(AmbientLight{ brightness: 1., color: Color::WHITE})
             .add_system(move_player.in_set(OnUpdate(GameState::Playing))
             .run_if(move_mode))
             .add_system(player_look.in_set(OnUpdate(GameState::Playing))
@@ -67,20 +67,6 @@ fn setup_settings(mut pkv: ResMut<PkvStore>) {
             }
         }
     }
-}
-
-fn spawn_cube(mut commands: Commands, textures: Res<TextureAssets>, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<StandardMaterial>>) {
-    commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(shape::Box::new(1.,1.,1.).into()),
-            material: materials.add(StandardMaterial {
-                base_color_texture: Some(textures.texture_bevy.clone()),
-                ..Default::default()
-            }),
-            transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
-            ..Default::default()
-        });
-    commands.insert_resource(AmbientLight{ brightness: 0.5, color: Color::WHITE});
 }
 
 fn move_player(

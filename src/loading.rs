@@ -1,8 +1,7 @@
-use crate::{GameState, FixedPoint, mesh::MeshTextureUVS};
+use crate::prelude::*;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_kira_audio::AudioSource;
-use bevy_wave_collapse::prelude::WaveMesh;
 
 pub struct LoadingPlugin;
 
@@ -46,10 +45,10 @@ pub struct TextureAssets {
 
 #[derive(AssetCollection, Resource)]
 pub struct WaveMeshAssets {
-    #[asset(path = "waves/Empty.wfo#Pot")]
-    pub empty_pot: Handle<WaveMesh<FixedPoint, MeshTextureUVS>>,
-    #[asset(path = "waves/Empty.wfo#Table")]
-    pub empty_table: Handle<WaveMesh<FixedPoint, MeshTextureUVS>>,
-    #[asset(path = "waves/Empty.wfo#Island")]
-    pub empty_island: Handle<WaveMesh<FixedPoint, MeshTextureUVS>>,
+    #[asset(path = "objs/Pots.obj#Pot")]
+    pub empty_pot: Handle<Mesh>,
+    #[asset(path = "objs/Pots.obj#Table")]
+    pub empty_table: Handle<Mesh>,
+    #[asset(path = "objs/Pots.obj#Island")]
+    pub empty_island: Handle<Mesh>,
 }

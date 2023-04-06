@@ -5,6 +5,13 @@ mod menu;
 mod player;
 mod map;
 mod mesh;
+mod plants;
+mod utils;
+
+mod prelude { 
+    pub(crate) use super::GameState;
+    pub(crate) use crate::utils::ConstHandles;
+}
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
@@ -19,7 +26,7 @@ use bevy::prelude::*;
 use player::{Player, LookData};
 
 type FixedPoint = fixed::types::I16F16;
-type WaveObject = bevy_wave_collapse::objects::WaveObject<FixedPoint, mesh::MeshTextureUVS, u64, ()>;
+type WaveObject = bevy_wave_collapse::objects::WaveObject<FixedPoint, mesh::MeshTextureUVS, u64, u64>;
 type WaveMesh = bevy_wave_collapse::prelude::WaveMesh<FixedPoint, mesh::MeshTextureUVS>;
 type WaveBuilder = bevy_wave_collapse::prelude::WaveBuilder<FixedPoint, mesh::MeshTextureUVS>;
 type RVec3 = bevy_wave_collapse::prelude::RVec3<FixedPoint>;
@@ -50,13 +57,16 @@ impl Plugin for GamePlugin {
             .add_plugin(ActionsPlugin)
             .add_plugin(InternalAudioPlugin)
             .add_plugin(PlayerPlugin)
-            .add_plugin(map::MapPlugin);
+            .add_plugin(map::MapPlugin)
+            .add_plugins(plants::PlantPlugin)
+            .init_asset_loader::<utils::ObjLoader>()
+            .init_resource::<utils::VoidHandles>();
 
-        #[cfg(debug_assertions)]
-        {
-            app.add_plugin(FrameTimeDiagnosticsPlugin::default())
-                .add_plugin(LogDiagnosticsPlugin::default());
-        }
+        // #[cfg(debug_assertions)]
+        // {
+        //     app.add_plugin(FrameTimeDiagnosticsPlugin::default())
+        //         .add_plugin(LogDiagnosticsPlugin::default());
+        // }
     }
 }
 
@@ -66,6 +76,6 @@ pub fn setup_camera(mut commands: Commands) {
         p.spawn((Camera3dBundle {
             transform: Transform::from_translation(Vec3::Z * 5.),
             ..Default::default()
-        }, LookData::default()));
+        }, LookData::default(), bevy_mod_picking::PickingCameraBundle::default()));
     });
 }

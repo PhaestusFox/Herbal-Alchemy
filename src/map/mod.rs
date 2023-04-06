@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use ids::Hex;
-use bevy::prelude::*;
+use crate::prelude::*;
+use bevy::{prelude::*, asset::HandleId};
 use bevy_wave_collapse::objects::Connection;
 use rand::Rng;
 
@@ -24,49 +24,73 @@ pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<WaveMesh>();
+        app.add_asset::<WaveObject>();
         app.add_asset_loader(bevy_wave_collapse::prelude::WaveMeshObjLoader::<crate::FixedPoint, crate::mesh::MeshTextureUVS>::default());
-        app.add_system(spwan_test_table.in_schedule(OnEnter(GameState::Playing)));
+        app.add_system(make_pot_assets.in_schedule(OnExit(GameState::Loading)));
+        app.add_systems((update_cell_transform, update_mesh).in_set(OnUpdate(GameState::Playing)));
+        app.register_type::<MapCell>();
     }
 }
 
-#[derive(Resource)]
-struct TestTable(Entity, WaveObject);
-
-fn spwan_test_table(
+fn make_pot_assets(
     mut commands: Commands,
-    meshs: Res<WaveMeshAssets>,
-    texture: Res<TextureAssets>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut bevy_meshs: ResMut<Assets<Mesh>>,
-    wave_meshs: Res<Assets<WaveMesh>>,
 ) {
-    let mut meshes: HashMap<Connection, Handle<WaveMesh>> = HashMap::new();
-    meshes.insert(Connection::new("Table"), meshs.empty_table.clone());
-    meshes.insert(Connection::new("Id"), meshs.empty_pot.clone());
-    meshes.insert(Connection::new("Island"), meshs.empty_island.clone());
-    let table = Table::new(meshes.clone());
-    let island = Island::new(meshes);
-
+    
     for id in ids::HexRangeIterator::<CellId>::new(1) {
-        let mut mesh_bulder = WaveBuilder::new();
-        let mesh = if rand::thread_rng().gen_bool(0.5) {
-            &table
+        let cell = if rand::thread_rng().gen_bool(0.5) {
+            MapCell::Table
         } else {
-            &island
+            MapCell::Island
         };
-        if let Err(e) = mesh.build(RVec3::default(), &wave_meshs, &mut mesh_bulder, &(), 0) {
-            error!("{}", e);
-        }
-        let mesh = mesh_bulder.extract_mesh(bevy::render::render_resource::PrimitiveTopology::TriangleList);
-        let id = commands.spawn(PbrBundle {
-            mesh: bevy_meshs.add(mesh),
-            material: materials.add(StandardMaterial {
-                base_color_texture: Some(texture.wave_mesh_texture.clone()),
-                ..Default::default()
-            }),
-            transform: Transform::from_translation(id.xyz(0.) * 2.),
+        let mut c = commands.spawn((PbrBundle {
+            material: Handle::weak(ConstHandles::WaveMaterial.into()),
             ..Default::default()
-        });
+        }, cell, id));
+        if rand::thread_rng().gen_bool(0.5) {
+            c.insert(crate::plants::Plant::Palm);
+        } 
     }
+}
 
+fn update_mesh(
+    mut cells: Query<(&mut Handle<Mesh>, &MapCell), Changed<MapCell>>,
+) {
+    for (mut mesh, cell_type) in &mut cells {
+        *mesh = Handle::weak((*cell_type).into());
+    }
+}
+
+fn update_cell_transform(
+    mut cells: Query<(&CellId, &mut Transform), (With<MapCell>, Changed<CellId>)>
+) {
+    for (cell, mut pos) in &mut cells {
+        pos.translation = cell.xyz(0.) * 2.;
+    }
+}
+
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+pub enum MapCell {
+    Island,
+    Table,
+}
+
+use bevy::reflect::TypeUuid;
+
+impl TypeUuid for MapCell {
+    const TYPE_UUID: uuid::Uuid = uuid::uuid!("ae52aa38-f993-481e-b9b5-554d4ee2da22");
+}
+
+impl Into<HandleId> for MapCell {
+    fn into(self) -> HandleId {
+        format!("objs/Pots.obj#{:?}", self).into()
+    }
+}
+
+impl MapCell {
+    pub fn seed_offset(&self) -> Vec3 {
+        match self {
+            MapCell::Island => Vec3 { x: 0., y: 0.2, z: 0.0 },
+            MapCell::Table => Vec3 { x: 0., y: 0.275, z: 0.0 }
+        }
+    }
 }
