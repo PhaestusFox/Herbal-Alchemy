@@ -6,12 +6,15 @@ pub struct TabPlugin;
 impl Plugin for TabPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<Tab>()
+        .register_type::<Tab>()
+        .add_state::<Tool>()
+        .register_type::<Tool>()
         .add_system(on_exit_menu.in_schedule(OnEnter(GameState::Playing)))
         .add_system(update_current_tab.in_set(OnUpdate(GameState::Playing)));
     }
 }
 
-#[derive(Debug, States, PartialEq, Eq, Hash, Default, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Reflect, States, PartialEq, Eq, Hash, Default, Clone, Copy, Serialize, Deserialize, strum_macros::EnumIter, Component)]
 pub enum Tab {
     #[default]
     Menu,
@@ -36,9 +39,19 @@ fn update_current_tab(
     mut pkv: ResMut<bevy_pkv::PkvStore>,
     current: Res<State<Tab>>,
 ) {
-    if current.is_changed() {
+    if current.is_changed() && current.0 != Tab::Menu {
         if let Err(e) = pkv.set("current_tab", &current.0) {
             error!("{:?}", e);
         };
     }
+}
+
+#[derive(Debug, Reflect, States, PartialEq, Eq, Hash, Default, Clone, Copy, Serialize, Deserialize, strum_macros::EnumIter, Component)]
+pub enum Tool {
+    #[default]
+    Hand,
+    Axe,
+    Shovel,
+    Trowl,
+    Shears,
 }

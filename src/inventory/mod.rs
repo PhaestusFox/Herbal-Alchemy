@@ -50,3 +50,6 @@ enum Item {
     Ingredient(Plant, PlantPart),
     Intimidate(u64),
 }
+
+#[derive(Component)]
+struct StackSize(u8);

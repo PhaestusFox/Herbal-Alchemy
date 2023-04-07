@@ -15,6 +15,7 @@ mod prelude {
     pub(crate) use super::GameState;
     pub(crate) use crate::utils::ConstHandles;
     pub(crate) use crate::loading::*;
+    pub(crate) use crate::tabs::{Tab, Tool};
 }
 
 use crate::actions::ActionsPlugin;
@@ -65,8 +66,8 @@ impl Plugin for GamePlugin {
             .add_plugins(plants::PlantPlugin)
             .init_asset_loader::<utils::ObjLoader>()
             .init_resource::<utils::VoidHandles>()
-            .add_plugin(toolbar::ToolBarPlugin)
             .add_plugin(tabs::TabPlugin)
+            .add_plugin(toolbar::ToolBarPlugin)
             .add_plugin(inventory::InventoryPlugin);
 
         // #[cfg(debug_assertions)]

@@ -55,5 +55,49 @@ pub struct WaveMeshAssets {
 #[derive(AssetCollection, Resource)]
 pub struct UiAssets {
     #[asset(path = "textures/ui_outline.png")]
-    pub ui_outline: Handle<Image>,
+    pub outline: Handle<Image>,
+    #[asset(path = "textures/ui_selected.png")]
+    pub selected: Handle<Image>,
+    #[asset(path = "textures/shop.png")]
+    pub shop_icon: Handle<Image>,
+    #[asset(path = "textures/lab.png")]
+    pub lab_icon: Handle<Image>,
+    #[asset(path = "textures/menu.png")]
+    pub menu_icon: Handle<Image>,
+    #[asset(path = "textures/map.png")]
+    pub map_icon: Handle<Image>,
+    #[asset(path = "textures/inventory.png")]
+    pub inventory_icon: Handle<Image>,
+    #[asset(path = "textures/hand.png")]
+    pub hand_icon: Handle<Image>,
+    #[asset(path = "textures/axe.png")]
+    pub axe_icon: Handle<Image>,
+    #[asset(path = "textures/shovel.png")]
+    pub shovel_icon: Handle<Image>,
+    #[asset(path = "textures/trowl.png")]
+    pub trowl_icon: Handle<Image>,
+    #[asset(path = "textures/shears.png")]
+    pub shears_icon: Handle<Image>,
+}
+
+impl UiAssets {
+    pub fn get_tab_icon(&self, tab: Tab) -> Handle<Image> {
+        match tab {
+            Tab::Menu       => self.menu_icon.clone(),
+            Tab::World      => self.map_icon.clone(),
+            Tab::Shop       => self.shop_icon.clone(),
+            Tab::Inventory  => self.inventory_icon.clone(),
+            Tab::Lab        => self.lab_icon.clone(),
+        }
+    }
+
+    pub fn get_tool_icon(&self, tool: Tool) -> Handle<Image> {
+        match tool {
+            Tool::Hand   => self.hand_icon.clone(),
+            Tool::Axe    => self.axe_icon.clone(),
+            Tool::Shovel => self.shovel_icon.clone(),
+            Tool::Trowl  => self.trowl_icon.clone(),
+            Tool::Shears => self.shears_icon.clone(),
+        }
+    }
 }

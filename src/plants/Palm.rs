@@ -53,8 +53,8 @@ fn grow_palm(
                 },
                 GrothStage::Sprout => {
                     commands.entity(entity)
-            .insert((palm_asstes.trunk.clone(), ScailWithGroth))
-            .with_children(|p| {
+                    .insert((palm_asstes.trunk.clone(), ScailWithGroth))
+                    .with_children(|p| {
                 for i in 0..6 {
                     p.spawn((PbrBundle {
                         transform: Transform::from_translation(PalmTree::leaf_offset()).with_rotation(Quat::from_rotation_y(1.0472 * i as f32)).with_scale(Vec3::ZERO),
@@ -66,6 +66,10 @@ fn grow_palm(
                     *stage = GrothStage::Small;
                     palm.reset();
                 },
+                GrothStage::Small => {
+                    *stage = GrothStage::Full;
+                    commands.entity(entity).insert(bevy_mod_picking::PickableBundle::default());
+                }
                 _ => {error!("palm grow from {:?} not impl", *stage); *stage = GrothStage::Dead},
             }
         }
