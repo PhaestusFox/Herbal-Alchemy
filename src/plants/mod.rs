@@ -12,7 +12,8 @@ impl Plugin for PlantPlugin {
         app.add_systems((spawn_plant, update_growth, scail_with_groth.after(update_growth)).in_set(OnUpdate(GameState::Playing)))
         .register_type::<GrothProgress>()
         .register_type::<GrothStage>()
-        .register_type::<PlantPart>();
+        .register_type::<PlantPart>()
+        .register_type::<Plant>();
         app.add_collection_to_loading_state::<_, Palm::PalmAssets>(GameState::Loading);
     }
 }
@@ -29,7 +30,8 @@ trait PlantTrait: Send + Sync {
     fn spawn(cell: &MapCell, parent: EntityCommands); 
 }
 
-#[derive(Component, Reflect, Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Component, Reflect, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, FromReflect)]
+#[reflect_value()]
 pub enum Plant {
     Palm
 }
@@ -54,16 +56,17 @@ enum GrothStage {
     Dead,
 }
 
-#[derive(Debug, Reflect, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Reflect, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, FromReflect)]
+#[reflect_value()]
 pub enum PlantPart {
-    Seed = 1,
-    Leaf = 1 << 1,
-    Root = 1 << 2,
-    Stem = 1 << 3,
-    Flower = 1 << 4,
-    Fruit = 1 << 5,
-    Bark = 1 << 6,
-    Auxiliary = 1 << 7
+    Seed = 2,
+    Leaf = 64,
+    Root = 8,
+    Stem = 16,
+    Flower = 1 << 7,
+    Fruit = 20,
+    Bark = 18,
+    Auxiliary = 1<<5,
 }
 
 fn spawn_plant(

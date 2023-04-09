@@ -10,12 +10,14 @@ mod utils;
 mod toolbar;
 mod inventory;
 mod tabs;
+mod crafting;
 
 mod prelude { 
     pub(crate) use super::GameState;
     pub(crate) use crate::utils::ConstHandles;
     pub(crate) use crate::loading::*;
     pub(crate) use crate::tabs::{Tab, Tool};
+    pub(crate) use crate::inventory::{InventoryEvent, Item, Slot};
 }
 
 use crate::actions::ActionsPlugin;

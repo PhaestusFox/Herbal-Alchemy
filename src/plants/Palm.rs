@@ -1,5 +1,6 @@
 use super::*;
 use bevy_asset_loader::prelude::*;
+use bevy_mod_picking::PickableBundle;
 use rand::Rng;
 
 #[derive(Component, Default, Reflect)]
@@ -18,8 +19,7 @@ impl Plugin for PalmPlugin {
         app
         .register_type::<PalmTree>()
         .add_systems((grow_palm.after(update_growth).before(scail_with_groth),).in_set(OnUpdate(GameState::Playing)))
-        .add_system(make_leaf_pickable)
-        .add_system(print_click);
+        .add_system(pick_leaf.in_set(OnUpdate(Tool::Shears)));
     }
 }
 
@@ -61,7 +61,7 @@ fn grow_palm(
                         material: Handle::weak(ConstHandles::WaveMaterial.into()),
                         mesh: palm_asstes.leaf.clone(),
                         ..Default::default()
-                    }, GrothProgress::new(1.), ScailWithGroth, PalmLeaf));
+                    }, GrothProgress::new(1.), ScailWithGroth, PalmLeaf, PickableBundle::default()));
                 }});
                     *stage = GrothStage::Small;
                     palm.reset();
@@ -69,7 +69,12 @@ fn grow_palm(
                 GrothStage::Small => {
                     *stage = GrothStage::Full;
                     commands.entity(entity).insert(bevy_mod_picking::PickableBundle::default());
-                }
+                },
+                GrothStage::Full => {
+                    commands.entity(entity).with_children(|p| {
+                        
+                    });
+                },
                 _ => {error!("palm grow from {:?} not impl", *stage); *stage = GrothStage::Dead},
             }
         }
@@ -79,22 +84,16 @@ fn grow_palm(
 #[derive(Component)]
 struct PalmLeaf;
 
-fn make_leaf_pickable(
-    mut commands: Commands,
-    leaf: Query<(Entity, &GrothProgress), (With<PalmLeaf>, Without<Interaction>)>,
+fn pick_leaf(
+    mut events: EventWriter<InventoryEvent>,
+    mut leaf: Query<(&mut GrothProgress, &Interaction), (Changed<Interaction>, With<PalmLeaf>)>,
 ) {
-    for (entity, progress) in &leaf {
-        if progress.percent() > 0.95 {
-            commands.entity(entity).insert(bevy_mod_picking::PickableBundle::default());
+    for (mut groth, interaction) in &mut leaf {
+        if groth.percent() != 1. {continue;}
+        if let Interaction::Clicked = interaction {
+            events.send(InventoryEvent::AddItem(Item::Ingredient(Plant::Palm, PlantPart::Leaf)));
+            groth.reset();
         }
-    }
-}
-
-fn print_click(
-    leaf: Query<&Interaction, (With<PalmLeaf>, Changed<Interaction>)>
-) {
-    for leaf in &leaf {
-        info!("leaf = {:?}", leaf);
     }
 }
 

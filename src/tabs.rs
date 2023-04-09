@@ -55,3 +55,11 @@ pub enum Tool {
     Trowl,
     Shears,
 }
+
+pub const MAIN_WINDOW_STYLE: Style = Style {
+    size: Size { width: Val::Percent(80.), height: Val::Percent(80.) },
+    margin: UiRect { top: Val::Undefined, bottom: Val::Undefined, left: Val::Auto, right: Val::Auto},
+    position: UiRect { left: Val::Undefined, right: Val::Undefined, top: Val::Px(0.), bottom: Val::Undefined },
+    flex_wrap: FlexWrap::Wrap,
+    ..Style::DEFAULT
+};

@@ -17,7 +17,8 @@ impl Plugin for LoadingPlugin {
         .add_collection_to_loading_state::<_, AudioAssets>(GameState::Loading)
         .add_collection_to_loading_state::<_, TextureAssets>(GameState::Loading)
         .add_collection_to_loading_state::<_, WaveMeshAssets>(GameState::Loading)
-        .add_collection_to_loading_state::<_, UiAssets>(GameState::Loading);
+        .add_collection_to_loading_state::<_, UiAssets>(GameState::Loading)
+        .add_collection_to_loading_state::<_, ItemIcons>(GameState::Loading);
     }
 }
 
@@ -100,4 +101,14 @@ impl UiAssets {
             Tool::Shears => self.shears_icon.clone(),
         }
     }
+}
+
+#[derive(AssetCollection, Resource)]
+pub struct ItemIcons {
+    #[asset(path = "icons/null.png")]
+    pub null: Handle<Image>,
+    #[asset(path = "icons/empty.png")]
+    pub empty: Handle<Image>,
+    #[asset(path = "icons/palm/leaf.png")]
+    pub palm_leaf: Handle<Image>,
 }

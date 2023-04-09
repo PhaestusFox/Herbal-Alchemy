@@ -1,24 +1,27 @@
 use bevy::{prelude::*, ecs::world::EntityMut};
 use bevy_ninepatch::{NinePatchBundle, NinePatchBuilder, NinePatchData};
 use strum::IntoEnumIterator;
-use crate::{prelude::*, inventory::HotBar};
+use crate::{prelude::*, inventory::{HotBar, Inventory}};
 
 pub struct ToolBarPlugin;
 
 #[derive(Resource)]
-struct BarEntitys {
-    hot_bar: Entity,
-    tab_bar: Entity,
-    tool_bar: Entity,
+pub struct BarEntitys {
+    pub hot_bar: Entity,
+    pub tab_bar: Entity,
+    pub tool_bar: Entity,
+    pub inventory_tab: Entity,
 }
 
 impl FromWorld for BarEntitys {
     fn from_world(world: &mut World) -> Self {
         let mut nine_patch = world.resource_mut::<Assets<NinePatchBuilder>>();
-        let nine_patch = nine_patch.add(NinePatchBuilder::by_margins(20, 20, 20, 20));
+        let nine_patch = nine_patch.add(NinePatchBuilder::by_margins(15, 15, 15, 15));
         world.resource_scope(|world, assets: Mut<UiAssets>| {
             world.resource_scope(|world, hotbar: Mut<HotBar>| {
-                BarEntitys { hot_bar: spawn_hotbar(world.spawn_empty(), &assets, &nine_patch, &hotbar), tab_bar: spawn_tab_menu(world.spawn_empty(), &nine_patch, &assets), tool_bar: spawn_tool_menu(world.spawn_empty(), &nine_patch, &assets) }
+                world.resource_scope(|world, inventory: Mut<Inventory>| {
+                BarEntitys { hot_bar: spawn_hotbar(world.spawn_empty(), &assets, &nine_patch, &hotbar), tab_bar: spawn_tab_menu(world.spawn_empty(), &nine_patch, &assets), tool_bar: spawn_tool_menu(world.spawn_empty(), &nine_patch, &assets), inventory_tab: crate::inventory::spawn_inventory_tab(world.spawn_empty(), &nine_patch, &assets, &inventory) }
+            })
             })
         })
     }
@@ -57,7 +60,7 @@ fn spawn_hotbar(
 ) -> Entity {
     commands.insert((NodeBundle {
         style: Style {
-            size: Size { width: Val::Percent(90.), height: Val::Px(120.) },
+            size: Size { width: Val::Percent(90.), height: Val::Percent(10.) },
             position: UiRect{bottom: Val::Px(10.), left: Val::Auto, right: Val::Auto, top: Val::Auto},
             margin: UiRect::horizontal(Val::Auto),
             position_type: PositionType::Absolute,
@@ -96,7 +99,7 @@ fn spawn_tab_menu(
 ) -> Entity {
     commands.insert((NodeBundle {
         style: Style {
-            size: Size { width: Val::Px(120.), height: Val::Percent(80.) },
+            size: Size { width: Val::Percent(10.), height: Val::Percent(80.) },
             position: UiRect{bottom: Val::Auto, left: Val::Px(0.), right: Val::Auto, top: Val::Px(0.)},
             margin: UiRect::bottom(Val::Auto),
             position_type: PositionType::Absolute,
@@ -109,6 +112,7 @@ fn spawn_tab_menu(
             let content = p.spawn((ButtonBundle {
                 style: Style {
                     size: Size::all(Val::Percent(100.)),
+                    min_size: Size::new(Val::Auto, Val::Px(60.)),
                     ..Default::default()
                 },
                 image: assets.get_tab_icon(tab).into(),
@@ -144,7 +148,7 @@ fn spawn_tool_menu(
 ) -> Entity {
     commands.insert((NodeBundle {
         style: Style {
-            size: Size { width: Val::Px(120.), height: Val::Percent(80.) },
+            size: Size { width: Val::Percent(10.), height: Val::Percent(80.) },
             position: UiRect{bottom: Val::Auto, right: Val::Px(0.), left: Val::Auto, top: Val::Px(0.)},
             margin: UiRect::bottom(Val::Auto),
             position_type: PositionType::Absolute,
@@ -157,6 +161,7 @@ fn spawn_tool_menu(
             let content = p.spawn((ButtonBundle {
                 style: Style {
                     size: Size::all(Val::Percent(100.)),
+                    min_size: Size::new(Val::Auto, Val::Px(60.)),
                     ..Default::default()
                 },
                 image: assets.get_tool_icon(tool).into(),
