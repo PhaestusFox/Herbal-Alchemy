@@ -140,6 +140,7 @@ pub struct HexSpiralIterator<T: Hex> {
 }
 
 impl<T: Hex> HexSpiralIterator<T> {
+    #[allow(dead_code)]
     pub fn new(radius: u32) -> HexSpiralIterator<T> {
         Self {
             current_ring: HexRingIterator::new(0),
@@ -160,23 +161,6 @@ impl<T: Hex> Iterator for HexSpiralIterator<T> {
             self.current_ring = HexRingIterator::new(self.radius);
             self.current_ring.next()
         })
-    }
-}
-
-pub(crate) fn round(q: f32, r: f32) -> (f32, f32) {
-    let s = -q - r;
-    let qr = q.round();
-    let rr = r.round();
-    let sr = s.round();
-    let q_diff = (q - qr).abs();
-    let r_diff = (r - rr).abs();
-    let s_diff = (s - sr).abs();
-    if q_diff > r_diff && q_diff > s_diff {
-        ((-rr - sr), rr)
-    } else if r_diff > s_diff {
-        (qr, (-qr - sr))
-    } else {
-        (qr, rr)
     }
 }
 
@@ -298,7 +282,6 @@ impl<'de> serde::de::Visitor<'de> for HexIdVisitor {
 }
 
 impl CellId {
-    pub const ZERO: CellId = CellId { q: 0, r: 0 };
 
     pub const fn new(q: i32, r: i32) -> CellId {
         Self { q, r }
@@ -309,38 +292,6 @@ impl CellId {
         let z = 0.75 * self.q as f32;
         let x = (self.q as f32 * 0.5 + self.r as f32) * SQRT_3DIV2;
         Vec3::new(x, y, z)
-    }
-    #[inline(always)]
-    pub fn x(&self) -> f32 {
-        (self.q as f32 * 0.5 + self.r as f32) * SQRT_3DIV2
-    }
-    #[inline(always)]
-    pub fn z(&self) -> f32 {
-        0.75 * self.q as f32
-    }
-    #[inline(always)]
-    pub fn from_xyz(x: f32, _y: f32, z: f32) -> CellId {
-        let q = ONE_AND_ONETHIRED * z; //TWOTHIRD * x / size;
-        let r = -TWOTHIRD * z + (SQRT_3DIV3 * x) * 2.; //(-ONETHIRD * x + SQRT_3DIV3 * y) / size;
-        let (q, r) = round(q, r);
-        CellId {
-            q: q as i32,
-            r: r as i32,
-        }
-    }
-    #[inline(always)]
-    pub fn get_in_range(&self, range: u32) -> impl Iterator<Item = CellId> {
-        OffsetIter {
-            offset: *self,
-            iter: HexRangeIterator::new(range),
-        }
-    }
-
-    pub fn distance(&self, othor: CellId) -> u32 {
-        let res =
-            ((self.q - othor.q).abs() + (self.r - othor.r).abs() + (self.s() - othor.s()).abs())
-                / 2;
-        res as u32
     }
 }
 

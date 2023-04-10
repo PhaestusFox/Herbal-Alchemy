@@ -269,6 +269,7 @@ impl Item {
             Item::Ingredient(Plant::Palm, _) => {
                 String::from("You Bite into a pice of palm tree and ask you self what are you doing with your life")
             },
+            #[allow(unreachable_patterns)]
             Item::Ingredient(_, _) => String::from("you tentatively lick the mystiriuse plant, as soon as you toung toches it you are suddently aware you are in a video game;\n you decide to report this bug you just found to you god Phox;"),
             Item::Intimidate(val, _) => format!("you lick the item; you get the feeling if you add this to a potion it would have the effect\n\n{:08b}\n\n by looking at it you can tell it can still have the following processes applied \n [{:?}]", val, self.can_do_process()),
         }

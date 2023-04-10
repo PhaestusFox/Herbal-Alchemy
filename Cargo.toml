@@ -1,6 +1,6 @@
 [package]
 name = "herbal-alchemy"
-version = "0.1.0"
+version = "0.1.1"
 publish = false
 authors = ["Phaestus Fox"]
 edition = "2021"
@@ -69,6 +69,7 @@ thiserror = "*"
 bevy_console = "*"
 clap = "*"
 indexmap = "*"
+bevy_atmosphere = "*"
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.28", default-features = false }

@@ -29,8 +29,8 @@ use crate::menu::MenuPlugin;
 use crate::player::PlayerPlugin;
 
 use bevy::app::App;
-#[cfg(debug_assertions)]
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+// #[cfg(debug_assertions)]
+// use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use player::{LookData, Player};
 
@@ -38,8 +38,6 @@ type FixedPoint = fixed::types::I16F16;
 type WaveObject =
     bevy_wave_collapse::objects::WaveObject<FixedPoint, mesh::MeshTextureUVS, u64, u64>;
 type WaveMesh = bevy_wave_collapse::prelude::WaveMesh<FixedPoint, mesh::MeshTextureUVS>;
-type WaveBuilder = bevy_wave_collapse::prelude::WaveBuilder<FixedPoint, mesh::MeshTextureUVS>;
-type RVec3 = bevy_wave_collapse::prelude::RVec3<FixedPoint>;
 
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
@@ -96,6 +94,7 @@ pub fn setup_camera(mut commands: Commands) {
                 },
                 LookData::default(),
                 bevy_mod_picking::PickingCameraBundle::default(),
+                bevy_atmosphere::prelude::AtmosphereCamera::default(),
             ));
-        });
+        },);
 }

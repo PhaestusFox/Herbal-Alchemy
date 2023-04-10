@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use bevy::{asset::HandleId, prelude::*};
 use bevy_mod_picking::PickableBundle;
-use rand::Rng;
 
 use crate::{GameState, WaveMesh, WaveObject};
 
@@ -35,7 +34,7 @@ impl Plugin for MapPlugin {
 }
 
 fn make_pot_assets(mut commands: Commands) {
-    for id in ids::HexRangeIterator::<CellId>::new(1) {
+    for id in ids::HexRangeIterator::<CellId>::new(10) {
         let cell = MapCell::Island;
         let mut c = commands.spawn((
             PbrBundle {

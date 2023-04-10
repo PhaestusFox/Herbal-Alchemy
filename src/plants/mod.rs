@@ -3,7 +3,7 @@ use crate::map::MapCell;
 use crate::prelude::*;
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use serde::{Deserialize, Serialize};
-mod Palm;
+mod palm;
 use bevy_asset_loader::prelude::*;
 
 pub struct PlantPlugin;
@@ -22,7 +22,7 @@ impl Plugin for PlantPlugin {
         .register_type::<GrothStage>()
         .register_type::<PlantPart>()
         .register_type::<Plant>();
-        app.add_collection_to_loading_state::<_, Palm::PalmAssets>(GameState::Loading)
+        app.add_collection_to_loading_state::<_, palm::PalmAssets>(GameState::Loading)
             .add_system(plant_plant.in_set(OnUpdate(Tool::Trowl)));
     }
 }
@@ -31,7 +31,7 @@ impl PluginGroup for PlantPlugin {
     fn build(self) -> bevy::app::PluginGroupBuilder {
         bevy::app::PluginGroupBuilder::start::<PlantPlugin>()
             .add(PlantPlugin)
-            .add(Palm::PalmPlugin)
+            .add(palm::PalmPlugin)
     }
 }
 
@@ -50,13 +50,13 @@ pub enum Plant {
 impl Plant {
     fn spawn(&self, cell: &MapCell, parent: EntityCommands) {
         match self {
-            Self::Palm => Palm::PalmTree::spawn(cell, parent),
+            Self::Palm => palm::PalmTree::spawn(cell, parent),
         }
     }
 
     pub fn tool_tip_text(&self, part: PlantPart) -> String {
         match self {
-            Plant::Palm => Palm::PalmTree::tool_tip_text(part),
+            Plant::Palm => palm::PalmTree::tool_tip_text(part),
         }
     }
 }
@@ -131,15 +131,16 @@ fn update_growth(time: Res<Time>, mut parts: Query<&mut GrothProgress>) {
 fn plant_plant(
     mut commands: Commands,
     cells: Query<(Entity, &Interaction), (Without<Plant>, Changed<Interaction>)>,
-    mut seed: Query<(&mut Item, &Slot), With<SelectedSlot>>,
+    mut seed: Query<(Entity, &mut Item, &Slot), With<SelectedSlot>>,
     mut events: EventWriter<InventoryEvent>,
 ) {
     for (e, interaction) in &cells {
         if let Interaction::Clicked = interaction {
-            if let Ok((seed, slot)) = seed.get_single_mut() {
+            if let Ok((entity, seed, slot)) = seed.get_single_mut() {
                 if let Item::Ingredient(plant, PlantPart::Seed) = *seed {
                     commands.entity(e).insert(plant);
                     events.send(InventoryEvent::RemoveItem(*slot));
+                    commands.entity(entity).remove::<SelectedSlot>();
                 }
             }
         }
