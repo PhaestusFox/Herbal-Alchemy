@@ -38,12 +38,17 @@ fn process_command(
         let old = *item;
         if let Process::Taste = process {
             let taste = item.taste();
-            reply!(log, "{taste}")
+            reply!(log, "{taste}");
+            return;
         }
         if let Err(e) = item.apply_process(process) {
             reply_failed!(log, "{e}")
         } else {
-            reply!(log, "{old:?} -> {item:?}");
+            if let Item::Intimidate(id, _) = *item {
+                reply!(log, "{old:?} -> {:08b}", id);
+            } else {
+                reply!(log, "this is a bug; please report how you did it");
+            }
         };
     }
 }
@@ -51,7 +56,7 @@ fn process_command(
 #[derive(Parser, ConsoleCommand)]
 #[command(name = "brew")]
 struct PotionCommand {
-    /// What to do to the potion
+    /// What action to do on the potion
     #[arg(value_enum)]
     action: PotionAcction,
 }
@@ -115,7 +120,7 @@ impl Item {
         match self {
             Item::Empty => return Err(CraftingError::NoItem),
             Item::Potion(_) => return Err(CraftingError::Potion),
-            Item::Ingredient(_, part) => *self = Item::Intimidate(*part as u8, 0),
+            Item::Ingredient(_, part) => *self = Item::Intimidate(*part as u8, u8::from(process)),
             Item::Intimidate(_, done) => {
                 if *done & u8::from(process) > 0 {
                     return Err(CraftingError::DuplicateProcess(u8::from(process)));
@@ -304,6 +309,7 @@ fn test_can_do() {
     item.apply_process(Process::Burn).unwrap();
     assert!(!item.can_do_process().contains(&Process::Burn));
     assert!(!item.can_do_process().contains(&Process::Freeze));
+    println!("can do {:?}", item.can_do_process());
 }
 
 impl Process {

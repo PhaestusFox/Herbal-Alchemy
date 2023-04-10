@@ -119,12 +119,28 @@ pub struct ItemIcons {
     pub cube: Handle<Image>,
     #[asset(path = "icons/ash.png")]
     pub ash: Handle<Image>,
-    #[asset(path = "icons/potion.png")]
-    pub potion: Handle<Image>,
     #[asset(path = "icons/palm/root.png")]
     pub palm_root: Handle<Image>,
     #[asset(path = "icons/palm/wood.png")]
     pub palm_wood: Handle<Image>,
     #[asset(path = "icons/palm/bark.png")]
     pub palm_bark: Handle<Image>,
+    #[asset(path = "icons/potion_0.png")]
+    pub potion_0: Handle<Image>,
+    #[asset(path = "icons/potion_1.png")]
+    pub potion_1: Handle<Image>,
+    #[asset(path = "icons/potion_2.png")]
+    pub potion_2: Handle<Image>,
+    #[asset(path = "icons/potion_3.png")]
+    pub potion_3: Handle<Image>,
+    #[asset(path = "icons/potion_4.png")]
+    pub potion_4: Handle<Image>,
+    #[asset(path = "icons/potion_5.png")]
+    pub potion_5: Handle<Image>,
+    #[asset(path = "icons/potion_6.png")]
+    pub potion_6: Handle<Image>,
+    #[asset(path = "icons/potion_7.png")]
+    pub potion_7: Handle<Image>,
+    #[asset(path = "icons/potion_d.png")]
+    pub potion_d: Handle<Image>,
 }

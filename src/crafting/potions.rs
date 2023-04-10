@@ -1,15 +1,16 @@
 use bevy::prelude::*;
 use indexmap::IndexSet as HashSet;
 use rand::{seq::IteratorRandom, Rng};
-use strum_macros::EnumIter;
 use std::fmt::Display;
 use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 use PotionEffect::*;
 impl PotionEffect {
     pub fn get_potion_effects(val: u8) -> Vec<PotionEffect> {
         use PotionEffect::*;
         let mut effects = Vec::new();
         match val {
+            0 => return vec![],
             // if all bits a set its boring
             255 => return vec![InstantDeath],
             // adding only unmodifider fruit will give you 20
@@ -70,7 +71,7 @@ impl PotionEffect {
         if val & 0b00100100 == 0b00100100 {
             effects.push(Invisibility)
         }
-        if val & 0b01000010 == 0b01000010 {
+        if val & 0b01011010 == 0b01000010 {
             effects.push(Strength)
         }
         if val & 0b10011001 == 0b00011000 {
@@ -79,7 +80,7 @@ impl PotionEffect {
         if val & 0b11001001 == 0b01001001 {
             effects.push(Confusion)
         }
-        if val & 0b11010100 == 0b01010100 {
+        if val & 0b01010101 == 0b01010100 {
             effects.push(Inflammation)
         }
         if val & 0b01111110 == 0b01011010 {
@@ -157,7 +158,6 @@ pub enum EffectTags {
     Instant,
     Ice,
     Fire,
-    FireOrIce,
     AreaOfEffect,
     Slow,
     Weather,
@@ -170,7 +170,7 @@ pub enum EffectTags {
     Random,
     Stealth,
     Movement,
-    DelayedEffect,
+    // DelayedEffect,
     EffectSelf,
     EffectTarget,
 }
@@ -190,26 +190,20 @@ impl PotionEffect {
                 EffectTags::Destructive,
             ],
             PotionEffect::Explosion => &[
-                EffectTags::FireOrIce,
                 EffectTags::Destructive,
                 EffectTags::AreaOfEffect,
                 EffectTags::Projectile,
             ],
             PotionEffect::Blizzard => &[
-                EffectTags::FireOrIce,
                 EffectTags::AreaOfEffect,
                 EffectTags::Ice,
                 EffectTags::Weather,
                 EffectTags::Slow,
             ],
-            PotionEffect::FrostFire => &[
-                EffectTags::FireOrIce,
-                EffectTags::AreaOfEffect,
-                EffectTags::Ice,
-                EffectTags::Fire,
-            ],
+            PotionEffect::FrostFire => {
+                &[EffectTags::AreaOfEffect, EffectTags::Ice, EffectTags::Fire]
+            }
             PotionEffect::InfernoBlizzard => &[
-                EffectTags::FireOrIce,
                 EffectTags::AreaOfEffect,
                 EffectTags::Fire,
                 EffectTags::Ice,
@@ -217,26 +211,19 @@ impl PotionEffect {
                 EffectTags::Destructive,
             ],
             PotionEffect::IceStorm => &[
-                EffectTags::FireOrIce,
                 EffectTags::AreaOfEffect,
                 EffectTags::Ice,
                 EffectTags::Weather,
                 EffectTags::Slow,
             ],
             PotionEffect::FireStorm => &[
-                EffectTags::FireOrIce,
                 EffectTags::AreaOfEffect,
                 EffectTags::Fire,
                 EffectTags::Weather,
                 EffectTags::Destructive,
             ],
-            PotionEffect::SnowBall => &[
-                EffectTags::FireOrIce,
-                EffectTags::Projectile,
-                EffectTags::Ice,
-            ],
+            PotionEffect::SnowBall => &[EffectTags::Projectile, EffectTags::Ice],
             PotionEffect::FireBall => &[
-                EffectTags::FireOrIce,
                 EffectTags::Projectile,
                 EffectTags::Fire,
                 EffectTags::Destructive,
@@ -260,30 +247,42 @@ impl PotionEffect {
             PotionEffect::Teleportation => &[
                 EffectTags::Positive,
                 EffectTags::Movement,
-                EffectTags::DelayedEffect,
+                EffectTags::Instant,
             ],
         }
     }
 
     fn conflicts(&self) -> &'static [PotionEffect] {
         match self {
-            Explosion | Blizzard | FrostFire | InfernoBlizzard | IceStorm | FireStorm
-            | SnowBall | FireBall => &[
-                Explosion,
-                Blizzard,
-                FrostFire,
-                InfernoBlizzard,
-                IceStorm,
-                FireStorm,
-                SnowBall,
-                FireBall,
-            ],
-            Paralysis | Saturation | Luck => &[BadLuck],
-            BadLuck => &[Luck],
-            Poison => &[Regeneration],
-            Regeneration => &[Poison],
-            Nausea | InstantDeath | Invisibility | Strength | Levitation | Confusion
-            | Inflammation | Teleportation => &[],
+            InstantDeath => &[Teleportation, Explosion, Blizzard, FrostFire, InfernoBlizzard, IceStorm, FireStorm, SnowBall, FireBall, Paralysis, Saturation, Luck, BadLuck, Nausea, Poison, Regeneration, Invisibility, Strength, Levitation, Confusion, Inflammation],
+            Explosion => &[InstantDeath, Teleportation, Blizzard, FrostFire, InfernoBlizzard, IceStorm, FireStorm, SnowBall, FireBall, Paralysis, Saturation, Luck, BadLuck, Nausea, Poison, Regeneration, Invisibility, Strength, Levitation, Confusion, Inflammation],
+            Blizzard => &[InstantDeath, Explosion, Teleportation, FrostFire, InfernoBlizzard, IceStorm, FireStorm, SnowBall, FireBall, Paralysis, Saturation, Luck, BadLuck, Nausea, Poison, Regeneration, Invisibility, Strength, Levitation, Confusion, Inflammation],
+            FrostFire => &[InstantDeath, Explosion, Blizzard, Luck, InfernoBlizzard, IceStorm, FireStorm, SnowBall, FireBall, Paralysis, Saturation],
+            InfernoBlizzard => &[InstantDeath, Explosion, Blizzard, FrostFire, Teleportation, IceStorm, FireStorm, SnowBall, FireBall, Strength, Saturation, Luck, BadLuck, Levitation],
+            IceStorm => &[InstantDeath, Explosion, Blizzard, FrostFire, InfernoBlizzard, Teleportation, FireStorm, SnowBall, FireBall, Paralysis, Saturation, Luck, Strength, Confusion, Poison, Regeneration, Levitation],
+            FireStorm => &[InstantDeath, Explosion, Blizzard, FrostFire, InfernoBlizzard, IceStorm, Teleportation, SnowBall, FireBall, Paralysis, Saturation, Luck, BadLuck, Inflammation, Poison, Regeneration, Levitation, Strength],
+            SnowBall => &[InstantDeath, Explosion, Blizzard, FrostFire, InfernoBlizzard, IceStorm, FireStorm, Teleportation, FireBall, Confusion, Saturation, Luck, BadLuck],
+            FireBall => &[InstantDeath, Explosion, Blizzard, FrostFire, InfernoBlizzard, IceStorm, FireStorm, SnowBall, Teleportation, Inflammation, Saturation],
+            Paralysis => &[InstantDeath, Explosion, Blizzard, FrostFire, BadLuck, IceStorm, FireStorm, Saturation],
+            Saturation => &[InstantDeath, Explosion, Blizzard, FrostFire, InfernoBlizzard, IceStorm, FireStorm, SnowBall, FireBall, Paralysis, Teleportation, Luck, BadLuck, Nausea, Poison, Regeneration, Invisibility, Strength, Levitation, Confusion, Inflammation],
+            Luck => &[InstantDeath, Explosion, Blizzard, FrostFire, InfernoBlizzard, IceStorm, FireStorm, SnowBall, Levitation, Inflammation, Saturation, Teleportation, BadLuck, Confusion, Poison, Regeneration, Invisibility, Strength],
+            BadLuck => &[InstantDeath, Explosion, Blizzard, Levitation, InfernoBlizzard, Inflammation, FireStorm, SnowBall, Confusion, Paralysis, Saturation, Luck, Teleportation, Nausea, Poison, Regeneration, Invisibility],
+            Nausea => &[InstantDeath, Explosion, Blizzard, Teleportation, Saturation, BadLuck],
+            Poison => &[InstantDeath, Explosion, Blizzard, Strength, Regeneration, IceStorm, FireStorm, Teleportation, Confusion, Levitation, Saturation, Luck, BadLuck],
+            Regeneration => &[InstantDeath, Explosion, Blizzard, Inflammation, Poison, IceStorm, FireStorm, Strength, Teleportation, Levitation, Saturation, Luck, BadLuck],
+            Invisibility => &[InstantDeath, Explosion, Blizzard, Luck, Saturation, BadLuck, Teleportation],
+            Strength => &[InstantDeath, Explosion, Blizzard, Teleportation, InfernoBlizzard, IceStorm, FireStorm, Regeneration, Confusion, Poison, Saturation, Luck, Inflammation, Levitation],
+            Levitation => &[InstantDeath, Explosion, Blizzard, Strength, InfernoBlizzard, IceStorm, FireStorm, Poison, Regeneration, Confusion, Saturation, Luck, BadLuck],
+            Confusion => &[InstantDeath, Explosion, Blizzard, Levitation, BadLuck, IceStorm, Strength, SnowBall, Inflammation, Poison, Saturation, Luck],
+            Inflammation => &[InstantDeath, Explosion, Blizzard, Confusion, BadLuck, Strength, FireStorm, Teleportation, FireBall, Regeneration, Saturation, Luck],
+            Teleportation => &[InstantDeath, Explosion, Blizzard, Inflammation, InfernoBlizzard, IceStorm, FireStorm, SnowBall, FireBall, Strength, Saturation, Luck, BadLuck, Nausea, Poison, Regeneration, Invisibility],
+        }
+    }
+
+    fn inalienable(&self) -> &'static [PotionEffect] {
+        match self {
+            InfernoBlizzard => &[Nausea, Paralysis],
+            _ => &[],
         }
     }
 }
@@ -337,9 +336,13 @@ impl TargetPotion {
                 ));
             }
             1 => {
-                extra = Some(Rule::NotEffect(
-                    *valid_effects.iter().choose(&mut rng).unwrap(),
-                ));
+                for _ in 0..4 {
+                    let temp = *valid_effects.iter().choose(&mut rng).unwrap();
+                    if !effect.inalienable().contains(&temp) {
+                        extra = Some(Rule::NotEffect(temp));
+                        break;
+                    }
+                }
             }
             2 => {
                 for _ in 0..5 {
@@ -365,10 +368,18 @@ impl TargetPotion {
 
     pub fn potion_request(&self) -> String {
         let Some(main) = self.main else {return String::from(self.customer.get_water_text())};
-        let mut request = self.customer.get_main_order_text().replace("{}", &main.to_string());
+        let mut request = self
+            .customer
+            .get_main_order_text()
+            .replace("{}", &main.to_string());
         if let Some(extra) = self.extra {
+            request.push('\n');
             request.push_str(&self.customer.get_extra_text(extra))
         }
+        request.push_str(&format!(
+            "\n\n- {} {:?}",
+            self.customer.mood, self.customer.archetype
+        ));
         request
     }
 
@@ -415,7 +426,7 @@ impl Customer {
         let mut rng = rand::thread_rng();
         Customer {
             archetype: CustomerType::iter().choose(&mut rng).unwrap(),
-            mood: CustomerMood::iter().choose(&mut rng).unwrap()
+            mood: CustomerMood::iter().choose(&mut rng).unwrap(),
         }
     }
 
@@ -423,46 +434,78 @@ impl Customer {
         match self.archetype {
             CustomerType::Adventurer => match self.mood {
                 CustomerMood::Happy => "Hello good sir, I am in need of a potion of {}.",
-                CustomerMood::Angry => "I don't have time for pleasantries, just give me a potion of {} now!",
-                CustomerMood::Anxious => "Excuse me, I need a potion of {}",
-                CustomerMood::Excited => "Wow, I'm so excited to try out a potion of {}! Can you make it for me?",
+                CustomerMood::Angry => {
+                    "I don't have time for pleasantries, just give me a potion of {} now!"
+                }
+                CustomerMood::Anxious => "Excuse me, I need a potion of {}. ",
+                CustomerMood::Excited => {
+                    "Wow, I'm so excited to try out a potion of {}! Can you make it for me?"
+                }
                 CustomerMood::Impatient => "Listen, I need a potion of {} and I need it right now.",
                 CustomerMood::Indifferent => "Hi, I am in need of a potion of {}.",
                 CustomerMood::Grumpy => "Ugh, just give me a potion of {} and be quick about it.",
             },
             CustomerType::Witch => match self.mood {
-                CustomerMood::Happy => "Greetings, I require a potion of {} for a special occasion.",
+                CustomerMood::Happy => {
+                    "Greetings, I require a potion of {} for a special occasion."
+                }
                 CustomerMood::Angry => "I demand a potion of {} immediately!",
-                CustomerMood::Anxious => "Please, I need a potion of {} to complete a crucial spell.",
+                CustomerMood::Anxious => {
+                    "Please, I need a potion of {} to complete a crucial spell."
+                }
                 CustomerMood::Excited => "Oh, I can't wait to try out a potion of {}!",
                 CustomerMood::Impatient => "Hurry up, I need a potion of {} right now!",
                 CustomerMood::Indifferent => "I suppose I'll take a potion of {}. Whatever.",
                 CustomerMood::Grumpy => "Just give me a potion of {}. And make it snappy.",
             },
             CustomerType::Wizard => match self.mood {
-                CustomerMood::Happy => "Greetings, I require a potion of {} to aid me in my studies.",
-                CustomerMood::Angry => "Hurry up and give me a potion of {} before I turn you into a toad!",
+                CustomerMood::Happy => {
+                    "Greetings, I require a potion of {} to aid me in my studies."
+                }
+                CustomerMood::Angry => {
+                    "Hurry up and give me a potion of {} before I turn you into a toad!"
+                }
                 CustomerMood::Anxious => "Please, I need a potion of {} as soon as possible!",
                 CustomerMood::Excited => "I'm feeling adventurous today, how about a potion of {}?",
-                CustomerMood::Impatient => "I don't have all day, give me a potion of {} right now!",
-                CustomerMood::Indifferent => "I suppose I could use a potion of {} if you have one.",
-                CustomerMood::Grumpy => "What do you want? Just give me a potion of {} and be done with it.",
+                CustomerMood::Impatient => {
+                    "I don't have all day, give me a potion of {} right now!"
+                }
+                CustomerMood::Indifferent => {
+                    "I suppose I could use a potion of {} if you have one."
+                }
+                CustomerMood::Grumpy => {
+                    "What do you want? Just give me a potion of {} and be done with it."
+                }
             },
             CustomerType::Alchemist => match self.mood {
-                CustomerMood::Happy => "Greetings, I require a potion of {} for my latest experiment.",
+                CustomerMood::Happy => {
+                    "Greetings, I require a potion of {} for my latest experiment."
+                }
                 CustomerMood::Angry => "I demand a potion of {} immediately!",
                 CustomerMood::Anxious => "Excuse me, can you make me a potion of {}?",
-                CustomerMood::Excited => "Hello, I'm looking for a potion of {} to help me with a new discovery!",
+                CustomerMood::Excited => {
+                    "Hello, I'm looking for a potion of {} to help me with a new discovery!"
+                }
                 CustomerMood::Impatient => "Hurry up! I need a potion of {} now!",
-                CustomerMood::Indifferent => "Hi, I need a potion of {} for some research I'm doing.",
-                CustomerMood::Grumpy => "I suppose I need a potion of {}...if you can even make one properly.",
+                CustomerMood::Indifferent => {
+                    "Hi, I need a potion of {} for some research I'm doing."
+                }
+                CustomerMood::Grumpy => {
+                    "I suppose I need a potion of {}...if you can even make one properly."
+                }
             },
             CustomerType::Noble => match self.mood {
-                CustomerMood::Happy => "Greetings, I require a potion of {} for my evening entertainment.",
+                CustomerMood::Happy => {
+                    "Greetings, I require a potion of {} for my evening entertainment."
+                }
                 CustomerMood::Angry => "I demand a potion of {} at once!",
-                CustomerMood::Anxious => "Excuse me, I am in need of a potion of {}.",
-                CustomerMood::Excited => "Good day, I require a potion of {} for my upcoming festivities!",
-                CustomerMood::Impatient => "I haven't got all day, I need a potion of {} right now!",
+                CustomerMood::Anxious => "Excuse me, I am in need of a potion of {}. ",
+                CustomerMood::Excited => {
+                    "Good day, I require a potion of {} for my upcoming festivities!"
+                }
+                CustomerMood::Impatient => {
+                    "I haven't got all day, I need a potion of {} right now!"
+                }
                 CustomerMood::Indifferent => "Hello there, I am in need of a potion of {}.",
                 CustomerMood::Grumpy => "Just give me a potion of {} and be done with it!",
             },
@@ -473,7 +516,9 @@ impl Customer {
                 CustomerMood::Excited => "Oh boy, I'm so excited for a potion of {}!",
                 CustomerMood::Impatient => "Hurry up and give me a potion of {} already!",
                 CustomerMood::Indifferent => "I guess I need a potion of {}.",
-                CustomerMood::Grumpy => "What do you want? Give me a potion of {} and be quick about it!",
+                CustomerMood::Grumpy => {
+                    "What do you want? Give me a potion of {} and be quick about it!"
+                }
             },
             CustomerType::Merchant => match self.mood {
                 CustomerMood::Happy => "Greetings! Might you have a potion of {} for sale?",
@@ -482,16 +527,22 @@ impl Customer {
                 CustomerMood::Excited => "I've been waiting for this! Give me a potion of {}!",
                 CustomerMood::Impatient => "I don't have all day, I need a potion of {} now!",
                 CustomerMood::Indifferent => "I suppose I could use a potion of {}.",
-                CustomerMood::Grumpy => "Get on with it, I need a potion of {} and I don't have all day!",
+                CustomerMood::Grumpy => {
+                    "Get on with it, I need a potion of {} and I don't have all day!"
+                }
             },
             CustomerType::Guard => match self.mood {
                 CustomerMood::Happy => "Good day! I'm in need of a potion of {} to keep me alert.",
                 CustomerMood::Angry => "Listen up! I need a potion of {} right now, got it?",
                 CustomerMood::Anxious => "I'm feeling uneasy. Can I get a potion of {}, please?",
                 CustomerMood::Excited => "Oh, I've been waiting for this! A potion of {} please!",
-                CustomerMood::Impatient => "I don't have time for this. Just give me a potion of {}.",
+                CustomerMood::Impatient => {
+                    "I don't have time for this. Just give me a potion of {}."
+                }
                 CustomerMood::Indifferent => "I need a potion of {}. That's all.",
-                CustomerMood::Grumpy => "What do you want? Give me a potion of {} and be quick about it!",
+                CustomerMood::Grumpy => {
+                    "What do you want? Give me a potion of {} and be quick about it!"
+                }
             },
         }
     }
@@ -502,7 +553,10 @@ impl Customer {
                 Rule::Effect(val) => format!("It also needs the added effect of {}", val),
                 Rule::Tag(val) => format!("It must have a side effect to make it {}", val),
                 Rule::NotEffect(val) => format!("It can't have {} as a side effect", val),
-                Rule::NotTag(val) => format!("It really can't have any side effects that would make it {}", val),
+                Rule::NotTag(val) => format!(
+                    "It really can't have any side effects that would make it {}",
+                    val
+                ),
             },
             CustomerType::Witch => match extra {
                 Rule::Effect(val) => format!("It must have {} as an effect or it's a no-go", val),
@@ -513,38 +567,61 @@ impl Customer {
             CustomerType::Wizard => match extra {
                 Rule::Effect(val) => format!("Add {} to the potion or I'll find another shop", val),
                 Rule::Tag(val) => format!("It must be {} or it's not worth my time", val),
-                Rule::NotEffect(val) => format!("No potions with {} effect, I have enough of that", val),
-                Rule::NotTag(val) => format!("Keep {} away from the potion, it's a deal breaker", val),
+                Rule::NotEffect(val) => {
+                    format!("No potions with {} effect, I have enough of that", val)
+                }
+                Rule::NotTag(val) => {
+                    format!("Keep {} away from the potion, it's a deal breaker", val)
+                }
             },
             CustomerType::Alchemist => match extra {
                 Rule::Effect(val) => format!("Don't forget the effect of {}", val),
-                Rule::Tag(val) => format!("It should contain the element of {} for the desired effect", val),
-                Rule::NotEffect(val) => format!("No {} effect please, not what I'm looking for", val),
+                Rule::Tag(val) => format!(
+                    "It should contain the element of {} for the desired effect",
+                    val
+                ),
+                Rule::NotEffect(val) => {
+                    format!("No {} effect please, not what I'm looking for", val)
+                }
                 Rule::NotTag(val) => format!("I don't want any side effects that have {}", val),
             },
             CustomerType::Noble => match extra {
                 Rule::Effect(val) => format!("Add {} effect for the extra boost I need", val),
                 Rule::Tag(val) => format!("I want it to be {} or I'm out of here", val),
                 Rule::NotEffect(val) => format!("Avoid any {} effect, it's not for me", val),
-                Rule::NotTag(val) => format!("I'm allergic to {} side effects, so none of that", val),
+                Rule::NotTag(val) => {
+                    format!("I'm allergic to {} side effects, so none of that", val)
+                }
             },
             CustomerType::Peasant => match extra {
                 Rule::Effect(val) => format!("Can you add {} to make it more potent?", val),
                 Rule::Tag(val) => format!("Make it {} or don't even bother", val),
                 Rule::NotEffect(val) => format!("I don't want any {} effect, thanks", val),
-                Rule::NotTag(val) => format!("I don't want to suffer from {} side effects, so avoid that", val),
+                Rule::NotTag(val) => format!(
+                    "I don't want to suffer from {} side effects, so avoid that",
+                    val
+                ),
             },
             CustomerType::Merchant => match extra {
                 Rule::Effect(val) => format!("Add {} to make it more valuable", val),
                 Rule::Tag(val) => format!("I want it to be {} or I'm not buying", val),
                 Rule::NotEffect(val) => format!("No {} effect, it's not worth my money", val),
-                Rule::NotTag(val) => format!("Avoid any {} side effects, I don't want to lose business over this", val),
+                Rule::NotTag(val) => format!(
+                    "Avoid any {} side effects, I don't want to lose business over this",
+                    val
+                ),
             },
             CustomerType::Guard => match extra {
-                Rule::Effect(val) => format!("Make sure it has {} effect, it's for a special mission", val),
+                Rule::Effect(val) => format!(
+                    "Make sure it has {} effect, it's for a special mission",
+                    val
+                ),
                 Rule::Tag(val) => format!("I need it to be {} for my duty", val),
                 Rule::NotEffect(val) => format!("Avoid {} effect, it could jeopardize my job", val),
-                Rule::NotTag(val) => format!("I don't want to suffer from {} side effects, it's not safe for my work", val),
+                Rule::NotTag(val) => format!(
+                    "I don't want to suffer from {} side effects, it's not safe for my work",
+                    val
+                ),
             },
         }
     }
@@ -554,7 +631,9 @@ impl Customer {
             CustomerType::Adventurer => "Just a plain glass of water will do for now.",
             CustomerType::Witch => "I require some pure water for my potion. Do you have any?",
             CustomerType::Wizard => "I need some water to cast a spell. Can I have a glass?",
-            CustomerType::Alchemist => "I just need some pure water to facilitate a special reaction.",
+            CustomerType::Alchemist => {
+                "I just need some pure water to facilitate a special reaction."
+            }
             CustomerType::Noble => "I'll have some water, thank you.",
             CustomerType::Peasant => "Just water for me, please.",
             CustomerType::Merchant => "I'll take a glass of water, please.",
@@ -586,10 +665,138 @@ pub enum CustomerMood {
     Grumpy,
 }
 
+impl std::fmt::Display for CustomerMood {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CustomerMood::Happy => f.write_str("a Happy"),
+            CustomerMood::Angry => f.write_str("an Angry"),
+            CustomerMood::Anxious => f.write_str("an Anxious"),
+            CustomerMood::Excited => f.write_str("an Excited"),
+            CustomerMood::Impatient => f.write_str("a very Impatient"),
+            CustomerMood::Indifferent => f.write_str("an Indifferent"),
+            CustomerMood::Grumpy => f.write_str("a Grumpy"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 enum Rule {
     Effect(PotionEffect),
     Tag(EffectTags),
     NotEffect(PotionEffect),
     NotTag(EffectTags),
+}
+
+#[test]
+fn possible_potions() {
+    use indexmap::IndexMap;
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open("potions.txt")
+        .unwrap();
+    let mut map = indexmap::IndexMap::new();
+    let mut reverse_map: indexmap::IndexMap<PotionEffect, Vec<u8>> = indexmap::IndexMap::new();
+    for i in 0..=255u8 {
+        let mut effects = HashSet::new();
+        for effect in PotionEffect::get_potion_effects(i) {
+            effects.insert(effect);
+            reverse_map.entry(effect).or_insert(Vec::new()).push(i);
+        }
+        map.insert(i, effects);
+    }
+    let all_effect = PotionEffect::iter().collect::<HashSet<_>>();
+    let mut have_no_pure = all_effect.clone();
+    let mut cant_make = Vec::new();
+    for effect in PotionEffect::iter() {
+        match reverse_map.get(&effect) {
+            None => cant_make.push(effect),
+            Some(set) => {
+                for val in set {
+                    if map.get(val).unwrap().len() == 1 {
+                        have_no_pure.remove(&effect);
+                    }
+                }
+            }
+        }
+    }
+    let _ = writeln!(&mut file, "Potions => Effect");
+    for (key, val) in map.iter() {
+        let _ = writeln!(&mut file, "{} = {:?}", key, val);
+    }
+    let _ = writeln!(&mut file, "How to get each Effect");
+    for (key, val) in reverse_map.iter() {
+        let _ = writeln!(&mut file, "{:?} = {:?}", key, val);
+    }
+    if cant_make.len() > 0 {
+        let _ = writeln!(&mut file, "**Error** Can't Make = {:?}", cant_make);
+    }
+    if have_no_pure.len() > 0 {
+        let _ = writeln!(&mut file, "**Warn** Have no pure = {:?}", have_no_pure);
+    }
+
+    let mut potion_tags = IndexMap::new();
+    for (key, val) in map.iter() {
+        let mut tags = HashSet::new();
+        for effect in val {
+            for tag in effect.get_tags() {
+                tags.insert(*tag);
+            }
+        }
+        potion_tags.insert(key, tags);
+    }
+    let _ = writeln!(&mut file, "Potions => Tags");
+    for (key, val) in potion_tags.iter() {
+        let _ = writeln!(&mut file, "{} = {:?}", key, val);
+    }
+
+    let mut cant_have_tags = IndexMap::new();
+    let all_tags = EffectTags::iter().collect::<HashSet<_>>();
+    for effect in PotionEffect::iter() {
+        let mut sub_all = all_tags.clone();
+        for tag in effect.get_tags() {
+            sub_all.remove(tag);
+        }
+        cant_have_tags.insert(effect, sub_all);
+    }
+
+    for (key, value) in reverse_map.iter() {
+        let current = cant_have_tags.get_mut(key).unwrap();
+        for potion in value {
+            let effects = map.get(potion).unwrap();
+            for effect in effects {
+                for tag in effect.get_tags() {
+                    current.remove(tag);
+                }
+            }
+        }
+    }
+
+    let _ = writeln!(&mut file, "Effect !=> Tags");
+    for (key, val) in cant_have_tags.iter() {
+        let _ = writeln!(&mut file, "{:?} = {:?}", key, val);
+    }
+
+    let mut cant_pair = IndexMap::new();
+    for effect in PotionEffect::iter() {
+        let mut sub_all = all_effect.clone();
+        sub_all.remove(&effect);
+        cant_pair.insert(effect, sub_all);
+    }
+
+    for (key, val) in reverse_map.iter() {
+        let current = cant_pair.get_mut(key).unwrap();
+        for potion in val {
+            for effect in map.get(potion).unwrap() {
+                current.remove(effect);
+            }
+        }
+    }   
+
+    let _ = writeln!(&mut file, "Effect !=> Effect");
+    for (key, val) in cant_pair.iter() {
+        let _ = writeln!(&mut file, "{:?} => &{:?}", key, val.iter().collect::<Vec<_>>());
+    }
 }

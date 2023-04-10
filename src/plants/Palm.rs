@@ -35,11 +35,14 @@ impl PalmTree {
     }
     pub fn tool_tip_text(part: PlantPart) -> String {
         match part {
-            PlantPart::Seed => format!("A coconut Thats still green: {:08b}", part as u8),
+            PlantPart::Seed => format!(
+                "A coconut thats still green\nMaybe You Could Plant it ;P: {:08b}",
+                part as u8
+            ),
             PlantPart::Leaf => format!("A Palm Fron: {:08b}", part as u8),
             PlantPart::Root => format!("A Coconut Root: {:08b}", part as u8),
             PlantPart::Stem => format!("A Log of a Palm Tree: {:08b}", part as u8),
-            PlantPart::Fruit => format!("A Ripe coconut: {:08b}", part as u8),
+            PlantPart::Fruit => format!("A Ripe coconut\nits to old to plant: {:08b}", part as u8),
             PlantPart::Bark => format!("A Fibers: {:08b}", part as u8),
             _ => format!(
                 "How did you get this :P [this is a bug!]: {:08b}",
@@ -99,10 +102,10 @@ fn grow_nut(
 }
 fn grow_palm(
     mut commands: Commands,
-    mut palm: Query<(Entity, &mut GrothProgress, &mut GrothStage), With<PalmTree>>,
+    mut palm: Query<(Entity, &mut GrothProgress, &mut GrothStage, &mut Transform), With<PalmTree>>,
     palm_asstes: Res<PalmAssets>,
 ) {
-    for (entity, mut palm, mut stage) in &mut palm {
+    for (entity, mut palm, mut stage, mut transform) in &mut palm {
         if palm.finished() {
             match *stage {
                 GrothStage::Dead => {}
@@ -112,6 +115,7 @@ fn grow_palm(
                     palm.reset();
                 }
                 GrothStage::Sprout => {
+                    transform.scale = Vec3::splat(0.);
                     commands
                         .entity(entity)
                         .insert((palm_asstes.trunk.clone(), ScailWithGroth))

@@ -170,6 +170,8 @@ pub enum Item {
 impl Item {
     fn get_bg_color(&self) -> Color {
         match self {
+            Item::Potion(0) => Color::BLUE,
+            Item::Potion(255) => Color::WHITE,
             Item::Potion(id) | Item::Intimidate(id, _) => Color::rgb_u8(
                 (id << 4) & 0b11110000,
                 (id << 2) & 0b11110000,
@@ -195,7 +197,19 @@ impl Item {
                 },
             },
             Item::Empty => asset.empty.clone(),
-            Item::Potion(_) => asset.potion.clone(),
+            Item::Potion(0) => asset.potion_5.clone(),
+            Item::Potion(255) => asset.potion_d.clone(),
+            Item::Potion(id) => match id % 8 {
+                0 => asset.potion_0.clone(),
+                1 => asset.potion_1.clone(),
+                2 => asset.potion_2.clone(),
+                3 => asset.potion_3.clone(),
+                4 => asset.potion_4.clone(),
+                5 => asset.potion_5.clone(),
+                6 => asset.potion_6.clone(),
+                7 => asset.potion_7.clone(),
+                _ => unreachable!(),
+            },
             Item::Intimidate(_, effect) => {
                 if effect & 0xf > (effect >> 4) & 0xf {
                     asset.ash.clone()
@@ -263,6 +277,7 @@ impl Item {
     pub fn tool_tip_text(&self) -> String {
         match self {
             Item::Empty => String::from("An Empty Inventory Slot"),
+            Item::Potion(0) => String::from("A bottle of water"),
             Item::Potion(id) => {
                 let effects = PotionEffect::get_potion_effects(*id);
                 let mut rep = String::from("Its a Potion of ");
@@ -280,7 +295,7 @@ impl Item {
             Item::Ingredient(plant, part) => plant.tool_tip_text(*part),
             Item::Intimidate(id, _) => {
                 format!(
-                    "Someting you cooked up in the Lab: {:08b}\n you can still do to it:\n {:?}",
+                    "Someting you cooked up in the Lab: {:08b}\n you can still:\n {:?}",
                     id,
                     self.can_do_process()
                 )

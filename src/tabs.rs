@@ -53,6 +53,18 @@ pub enum Tab {
     Lab,
 }
 
+impl Tab {
+    pub fn tool_tip(&self) -> ToolTipData {
+        ToolTipData(match self {
+            Tab::Menu => String::from("Open the Menu"),
+            Tab::World => String::from("Visit The World to Garden"),
+            Tab::Shop => String::from("See a customer"),
+            Tab::Inventory => String::from("See ingredents"),
+            Tab::Lab => String::from("Go to the lab to make a potion"),
+        })
+    }
+}
+
 fn on_exit_menu(pkv: Res<bevy_pkv::PkvStore>, mut next: ResMut<NextState<Tab>>) {
     if let Ok(current) = pkv.get("current_tab") {
         next.set(current);
@@ -110,6 +122,8 @@ pub const MAIN_WINDOW_STYLE: Style = Style {
         width: Val::Percent(80.),
         height: Val::Percent(80.),
     },
+    min_size: Size::all(Val::Percent(80.)),
+    max_size: Size::all(Val::Percent(80.)),
     margin: UiRect {
         top: Val::Undefined,
         bottom: Val::Undefined,
@@ -168,6 +182,11 @@ pub fn spawn_shop_tab(
                 TextBundle {
                     style: Style {
                         size: Size::all(Val::Percent(100.)),
+                        max_size: Size {
+                            width: Val::Px(1000.),
+                            height: Val::Auto,
+                        },
+                        margin: UiRect::horizontal(Val::Auto),
                         ..Default::default()
                     },
                     text: Text {
@@ -180,7 +199,7 @@ pub fn spawn_shop_tab(
                             value: "Shop Text Init".to_string(),
                         }],
                         alignment: TextAlignment::Center,
-                        ..Default::default()
+                        linebreak_behaviour: bevy::text::BreakLineOn::WordBoundary,
                     },
                     ..Default::default()
                 },

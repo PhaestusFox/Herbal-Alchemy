@@ -174,6 +174,7 @@ fn spawn_tab_menu(
                             ..Default::default()
                         },
                         tab,
+                        tab.tool_tip(),
                     ))
                     .id();
                 p.spawn(NinePatchBundle {
