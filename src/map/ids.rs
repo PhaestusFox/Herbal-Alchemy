@@ -1,7 +1,7 @@
-use serde::ser::SerializeTuple;
-use bevy::prelude::*;
 use super::HexNeighbour;
+use bevy::prelude::*;
 use consts::*;
+use serde::ser::SerializeTuple;
 
 pub trait Hex: Copy + Sized + std::ops::Add<Self, Output = Self> {
     const ZERO: Self;

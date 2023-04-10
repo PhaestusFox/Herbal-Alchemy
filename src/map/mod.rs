@@ -1,8 +1,9 @@
 use crate::prelude::*;
-use bevy::{prelude::*, asset::HandleId};
+use bevy::{asset::HandleId, prelude::*};
+use bevy_mod_picking::PickableBundle;
 use rand::Rng;
 
-use crate::{WaveMesh, WaveObject, GameState};
+use crate::{GameState, WaveMesh, WaveObject};
 
 use self::ids::CellId;
 
@@ -23,43 +24,42 @@ impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<WaveMesh>();
         app.add_asset::<WaveObject>();
-        app.add_asset_loader(bevy_wave_collapse::prelude::WaveMeshObjLoader::<crate::FixedPoint, crate::mesh::MeshTextureUVS>::default());
+        app.add_asset_loader(bevy_wave_collapse::prelude::WaveMeshObjLoader::<
+            crate::FixedPoint,
+            crate::mesh::MeshTextureUVS,
+        >::default());
         app.add_system(make_pot_assets.in_schedule(OnExit(GameState::Loading)));
         app.add_systems((update_cell_transform, update_mesh).in_set(OnUpdate(GameState::Playing)));
         app.register_type::<MapCell>();
     }
 }
 
-fn make_pot_assets(
-    mut commands: Commands,
-) {
-    
+fn make_pot_assets(mut commands: Commands) {
     for id in ids::HexRangeIterator::<CellId>::new(1) {
-        let cell = if rand::thread_rng().gen_bool(0.5) {
-            MapCell::Table
-        } else {
-            MapCell::Island
-        };
-        let mut c = commands.spawn((PbrBundle {
-            material: Handle::weak(ConstHandles::WaveMaterial.into()),
-            ..Default::default()
-        }, cell, id));
-        if rand::thread_rng().gen_bool(0.5) {
+        let cell = MapCell::Island;
+        let mut c = commands.spawn((
+            PbrBundle {
+                material: Handle::weak(ConstHandles::WaveMaterial.into()),
+                ..Default::default()
+            },
+            cell,
+            id,
+            PickableBundle::default(),
+        ));
+        if id == CellId::new(0, 0) {
             c.insert(crate::plants::Plant::Palm);
-        } 
+        }
     }
 }
 
-fn update_mesh(
-    mut cells: Query<(&mut Handle<Mesh>, &MapCell), Changed<MapCell>>,
-) {
+fn update_mesh(mut cells: Query<(&mut Handle<Mesh>, &MapCell), Changed<MapCell>>) {
     for (mut mesh, cell_type) in &mut cells {
         *mesh = Handle::weak((*cell_type).into());
     }
 }
 
 fn update_cell_transform(
-    mut cells: Query<(&CellId, &mut Transform), (With<MapCell>, Changed<CellId>)>
+    mut cells: Query<(&CellId, &mut Transform), (With<MapCell>, Changed<CellId>)>,
 ) {
     for (cell, mut pos) in &mut cells {
         pos.translation = cell.xyz(0.) * 2.;
@@ -87,8 +87,16 @@ impl Into<HandleId> for MapCell {
 impl MapCell {
     pub fn seed_offset(&self) -> Vec3 {
         match self {
-            MapCell::Island => Vec3 { x: 0., y: 0.2, z: 0.0 },
-            MapCell::Table => Vec3 { x: 0., y: 0.275, z: 0.0 }
+            MapCell::Island => Vec3 {
+                x: 0.,
+                y: 0.2,
+                z: 0.0,
+            },
+            MapCell::Table => Vec3 {
+                x: 0.,
+                y: 0.275,
+                z: 0.0,
+            },
         }
     }
 }

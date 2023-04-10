@@ -8,7 +8,44 @@ pub struct PalmTree;
 
 impl PalmTree {
     fn leaf_offset() -> Vec3 {
-        Vec3 { x: 0., y: 0.9, z: -0.32 }
+        Vec3 {
+            x: 0.,
+            y: 0.9,
+            z: -0.32,
+        }
+    }
+    fn coconut_offset(id: u8) -> Vec3 {
+        match id {
+            0 => Vec3 {
+                x: 0.1,
+                y: 0.8,
+                z: -0.32,
+            },
+            1 => Vec3 {
+                x: -0.1,
+                y: 0.8,
+                z: -0.32,
+            },
+            _ => Vec3 {
+                x: -0.05,
+                y: 0.8,
+                z: -0.16,
+            },
+        }
+    }
+    pub fn tool_tip_text(part: PlantPart) -> String {
+        match part {
+            PlantPart::Seed => format!("A coconut Thats still green: {:08b}", part as u8),
+            PlantPart::Leaf => format!("A Palm Fron: {:08b}", part as u8),
+            PlantPart::Root => format!("A Coconut Root: {:08b}", part as u8),
+            PlantPart::Stem => format!("A Log of a Palm Tree: {:08b}", part as u8),
+            PlantPart::Fruit => format!("A Ripe coconut: {:08b}", part as u8),
+            PlantPart::Bark => format!("A Fibers: {:08b}", part as u8),
+            _ => format!(
+                "How did you get this :P [this is a bug!]: {:08b}",
+                part as u8
+            ),
+        }
     }
 }
 
@@ -16,66 +53,124 @@ pub struct PalmPlugin;
 
 impl Plugin for PalmPlugin {
     fn build(&self, app: &mut App) {
-        app
-        .register_type::<PalmTree>()
-        .add_systems((grow_palm.after(update_growth).before(scail_with_groth),).in_set(OnUpdate(GameState::Playing)))
-        .add_system(pick_leaf.in_set(OnUpdate(Tool::Shears)));
+        app.register_type::<PalmTree>()
+            .add_systems(
+                (grow_palm, grow_nut)
+                    .after(update_growth)
+                    .before(scail_with_groth)
+                    .in_set(OnUpdate(GameState::Playing)),
+            )
+            .add_system(pick_leaf.in_set(OnUpdate(Tool::Shears)))
+            .add_system(pick_nut.in_set(OnUpdate(Tool::Hand)))
+            .add_system(dig_root.in_set(OnUpdate(Tool::Shovel)))
+            .add_system(chop_palm.in_set(OnUpdate(Tool::Axe)));
     }
 }
 
 impl PlantTrait for PalmTree {
     fn spawn(cell: &MapCell, mut parent: EntityCommands) {
         parent.with_children(|p| {
-            p.spawn((PbrBundle {
-                material: Handle::weak(ConstHandles::WaveMaterial.into()),
-                mesh: Handle::weak("objs/Palm.obj#Nut".into()),
-                transform: Transform::from_translation(cell.seed_offset()),
-                ..Default::default()
-            }, PalmTree, GrothStage::Seed,
-            GrothProgress::new(rand::thread_rng().gen_range(1.0..2.0))));
+            p.spawn((
+                PbrBundle {
+                    material: Handle::weak(ConstHandles::WaveMaterial.into()),
+                    mesh: Handle::weak("objs/Palm.obj#Nut".into()),
+                    transform: Transform::from_translation(cell.seed_offset()),
+                    ..Default::default()
+                },
+                PalmTree,
+                GrothStage::Seed,
+                GrothProgress::new(rand::thread_rng().gen_range(2.0..5.0)),
+            ));
         });
     }
 }
 
+fn grow_nut(
+    mut palm: Query<(&mut Handle<Mesh>, &GrothProgress), With<PalmNut>>,
+    palm_asstes: Res<PalmAssets>,
+) {
+    for (mut nut, groth) in &mut palm {
+        if groth.percent() > 0.95 {
+            *nut = palm_asstes.fruit.clone();
+        } else {
+            *nut = palm_asstes.seed.clone();
+        }
+    }
+}
 fn grow_palm(
     mut commands: Commands,
-    mut palm: Query<(Entity, &mut GrothProgress, &mut GrothStage)>,
+    mut palm: Query<(Entity, &mut GrothProgress, &mut GrothStage), With<PalmTree>>,
     palm_asstes: Res<PalmAssets>,
 ) {
     for (entity, mut palm, mut stage) in &mut palm {
         if palm.finished() {
             match *stage {
-                GrothStage::Dead => {},
+                GrothStage::Dead => {}
                 GrothStage::Seed => {
                     commands.entity(entity).insert(palm_asstes.sprout.clone());
                     *stage = GrothStage::Sprout;
                     palm.reset();
-                },
+                }
                 GrothStage::Sprout => {
-                    commands.entity(entity)
-                    .insert((palm_asstes.trunk.clone(), ScailWithGroth))
-                    .with_children(|p| {
-                for i in 0..6 {
-                    p.spawn((PbrBundle {
-                        transform: Transform::from_translation(PalmTree::leaf_offset()).with_rotation(Quat::from_rotation_y(1.0472 * i as f32)).with_scale(Vec3::ZERO),
-                        material: Handle::weak(ConstHandles::WaveMaterial.into()),
-                        mesh: palm_asstes.leaf.clone(),
-                        ..Default::default()
-                    }, GrothProgress::new(1.), ScailWithGroth, PalmLeaf, PickableBundle::default()));
-                }});
+                    commands
+                        .entity(entity)
+                        .insert((palm_asstes.trunk.clone(), ScailWithGroth))
+                        .with_children(|p| {
+                            for i in 0..6 {
+                                p.spawn((
+                                    PbrBundle {
+                                        transform: Transform::from_translation(
+                                            PalmTree::leaf_offset(),
+                                        )
+                                        .with_rotation(Quat::from_rotation_y(1.0472 * i as f32))
+                                        .with_scale(Vec3::ZERO),
+                                        material: Handle::weak(ConstHandles::WaveMaterial.into()),
+                                        mesh: palm_asstes.leaf.clone(),
+                                        ..Default::default()
+                                    },
+                                    GrothProgress::new(1.),
+                                    ScailWithGroth,
+                                    PalmLeaf,
+                                    PickableBundle::default(),
+                                ));
+                            }
+                        });
                     *stage = GrothStage::Small;
                     palm.reset();
-                },
+                }
                 GrothStage::Small => {
                     *stage = GrothStage::Full;
-                    commands.entity(entity).insert(bevy_mod_picking::PickableBundle::default());
-                },
+                    commands.entity(entity).remove::<ScailWithGroth>();
+                    commands
+                        .entity(entity)
+                        .insert(bevy_mod_picking::PickableBundle::default());
+                }
                 GrothStage::Full => {
                     commands.entity(entity).with_children(|p| {
-                        
+                        for i in 0..3 {
+                            p.spawn((
+                                PbrBundle {
+                                    transform: Transform::from_translation(
+                                        PalmTree::coconut_offset(i),
+                                    )
+                                    .with_scale(Vec3::ZERO),
+                                    material: Handle::weak(ConstHandles::WaveMaterial.into()),
+                                    mesh: palm_asstes.seed.clone(),
+                                    ..Default::default()
+                                },
+                                GrothProgress::new(5.),
+                                ScailWithGroth,
+                                PalmNut,
+                                PickableBundle::default(),
+                            ));
+                        }
                     });
-                },
-                _ => {error!("palm grow from {:?} not impl", *stage); *stage = GrothStage::Dead},
+                    *stage = GrothStage::Dead;
+                }
+                _ => {
+                    error!("palm grow from {:?} not impl", *stage);
+                    *stage = GrothStage::Dead
+                }
             }
         }
     }
@@ -83,16 +178,92 @@ fn grow_palm(
 
 #[derive(Component)]
 struct PalmLeaf;
+#[derive(Component)]
+struct PalmNut;
 
 fn pick_leaf(
     mut events: EventWriter<InventoryEvent>,
     mut leaf: Query<(&mut GrothProgress, &Interaction), (Changed<Interaction>, With<PalmLeaf>)>,
 ) {
     for (mut groth, interaction) in &mut leaf {
-        if groth.percent() != 1. {continue;}
+        if groth.percent() != 1. {
+            continue;
+        }
         if let Interaction::Clicked = interaction {
-            events.send(InventoryEvent::AddItem(Item::Ingredient(Plant::Palm, PlantPart::Leaf)));
+            events.send(InventoryEvent::AddItem(Item::Ingredient(
+                Plant::Palm,
+                PlantPart::Leaf,
+            )));
             groth.reset();
+        }
+    }
+}
+
+fn pick_nut(
+    mut events: EventWriter<InventoryEvent>,
+    mut nut: Query<(&mut GrothProgress, &Interaction), (Changed<Interaction>, With<PalmNut>)>,
+) {
+    for (mut groth, interaction) in &mut nut {
+        if groth.percent() < 0.75 {
+            continue;
+        }
+        if let Interaction::Clicked = interaction {
+            if groth.percent() > 0.95 {
+                events.send(InventoryEvent::AddItem(Item::Ingredient(
+                    Plant::Palm,
+                    PlantPart::Fruit,
+                )));
+            } else {
+                events.send(InventoryEvent::AddItem(Item::Ingredient(
+                    Plant::Palm,
+                    PlantPart::Seed,
+                )));
+            }
+            groth.reset();
+        }
+    }
+}
+
+fn dig_root(
+    mut events: EventWriter<InventoryEvent>,
+    leaf: Query<(&GrothProgress, &Interaction), (Changed<Interaction>, With<PalmTree>)>,
+) {
+    for (groth, interaction) in &leaf {
+        if groth.percent() != 1. {
+            continue;
+        }
+        if let Interaction::Clicked = interaction {
+            events.send(InventoryEvent::AddItem(Item::Ingredient(
+                Plant::Palm,
+                PlantPart::Root,
+            )));
+        }
+    }
+}
+
+fn chop_palm(
+    mut commands: Commands,
+    mut events: EventWriter<InventoryEvent>,
+    mut nut: Query<
+        (Entity, &GrothProgress, &Interaction, &Parent),
+        (Changed<Interaction>, With<PalmTree>),
+    >,
+) {
+    for (entity, groth, interaction, parent) in &mut nut {
+        if groth.percent() != 1. {
+            continue;
+        }
+        if let Interaction::Clicked = interaction {
+            commands.entity(entity).despawn_recursive();
+            commands.entity(parent.get()).remove::<Plant>();
+            events.send(InventoryEvent::AddItem(Item::Ingredient(
+                Plant::Palm,
+                PlantPart::Stem,
+            )));
+            events.send(InventoryEvent::AddItem(Item::Ingredient(
+                Plant::Palm,
+                PlantPart::Bark,
+            )));
         }
     }
 }
@@ -108,4 +279,6 @@ pub(super) struct PalmAssets {
     seed: Handle<Mesh>,
     #[asset(path = "objs/Palm.obj#Sprout")]
     sprout: Handle<Mesh>,
+    #[asset(path = "objs/Palm.obj#Fruit")]
+    fruit: Handle<Mesh>,
 }

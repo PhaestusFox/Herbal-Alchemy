@@ -84,20 +84,20 @@ pub struct UiAssets {
 impl UiAssets {
     pub fn get_tab_icon(&self, tab: Tab) -> Handle<Image> {
         match tab {
-            Tab::Menu       => self.menu_icon.clone(),
-            Tab::World      => self.map_icon.clone(),
-            Tab::Shop       => self.shop_icon.clone(),
-            Tab::Inventory  => self.inventory_icon.clone(),
-            Tab::Lab        => self.lab_icon.clone(),
+            Tab::Menu => self.menu_icon.clone(),
+            Tab::World => self.map_icon.clone(),
+            Tab::Shop => self.shop_icon.clone(),
+            Tab::Inventory => self.inventory_icon.clone(),
+            Tab::Lab => self.lab_icon.clone(),
         }
     }
 
     pub fn get_tool_icon(&self, tool: Tool) -> Handle<Image> {
         match tool {
-            Tool::Hand   => self.hand_icon.clone(),
-            Tool::Axe    => self.axe_icon.clone(),
+            Tool::Hand => self.hand_icon.clone(),
+            Tool::Axe => self.axe_icon.clone(),
             Tool::Shovel => self.shovel_icon.clone(),
-            Tool::Trowl  => self.trowl_icon.clone(),
+            Tool::Trowl => self.trowl_icon.clone(),
             Tool::Shears => self.shears_icon.clone(),
         }
     }
@@ -111,4 +111,20 @@ pub struct ItemIcons {
     pub empty: Handle<Image>,
     #[asset(path = "icons/palm/leaf.png")]
     pub palm_leaf: Handle<Image>,
+    #[asset(path = "icons/palm/fruit.png")]
+    pub palm_fruit: Handle<Image>,
+    #[asset(path = "icons/palm/seed.png")]
+    pub palm_seed: Handle<Image>,
+    #[asset(path = "icons/cube.png")]
+    pub cube: Handle<Image>,
+    #[asset(path = "icons/ash.png")]
+    pub ash: Handle<Image>,
+    #[asset(path = "icons/potion.png")]
+    pub potion: Handle<Image>,
+    #[asset(path = "icons/palm/root.png")]
+    pub palm_root: Handle<Image>,
+    #[asset(path = "icons/palm/wood.png")]
+    pub palm_wood: Handle<Image>,
+    #[asset(path = "icons/palm/bark.png")]
+    pub palm_bark: Handle<Image>,
 }

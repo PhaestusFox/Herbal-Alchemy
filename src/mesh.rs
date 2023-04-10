@@ -11,6 +11,7 @@ pub enum MeshTextureUVS {
     PalmTrunk = 9,
     PalmLeaf = 10,
     PalmNut = 11,
+    PalmSeed = 12,
 }
 
 impl bevy_wave_collapse::vertex::VertexUV for MeshTextureUVS {

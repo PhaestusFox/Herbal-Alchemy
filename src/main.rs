@@ -5,10 +5,10 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
 use bevy::DefaultPlugins;
+use bevy_pkv::PkvStore;
 use herbal_alchemy::GamePlugin;
 use std::io::Cursor;
 use winit::window::Icon;
-use bevy_pkv::PkvStore;
 
 fn main() {
     let mut app = App::new();
@@ -27,10 +27,15 @@ fn main() {
         .add_plugin(GamePlugin)
         .add_system(set_window_icon.on_startup())
         .add_system(herbal_alchemy::setup_camera.on_startup());
-        #[cfg(debug_assertions)]
-        app.add_plugin(bevy_editor_pls::EditorPlugin::default());
-        app.add_plugins(bevy_mod_picking::DefaultPickingPlugins)
+    #[cfg(debug_assertions)]
+    app.add_plugin(bevy_editor_pls::EditorPlugin::default());
+    app.add_plugins(bevy_mod_picking::DefaultPickingPlugins)
         .add_plugin(bevy_ninepatch::NinePatchPlugin::<()>::default())
+        .add_plugin(bevy_console::ConsolePlugin)
+        .insert_resource(bevy_console::ConsoleConfiguration {
+            keys: Vec::with_capacity(0),
+            ..Default::default()
+        })
         .run();
 }
 

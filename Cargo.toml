@@ -67,6 +67,8 @@ bevy_mod_picking = "*"
 bevy_ninepatch = "*"
 thiserror = "*"
 bevy_console = "*"
+clap = "*"
+indexmap = "*"
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.28", default-features = false }

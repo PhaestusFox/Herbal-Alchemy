@@ -1,23 +1,25 @@
 mod actions;
 mod audio;
+mod crafting;
+mod inventory;
 mod loading;
-mod menu;
-mod player;
 mod map;
+mod menu;
 mod mesh;
 mod plants;
-mod utils;
-mod toolbar;
-mod inventory;
+mod player;
 mod tabs;
-mod crafting;
+mod tool_tips;
+mod toolbar;
+mod utils;
 
-mod prelude { 
+mod prelude {
     pub(crate) use super::GameState;
-    pub(crate) use crate::utils::ConstHandles;
-    pub(crate) use crate::loading::*;
-    pub(crate) use crate::tabs::{Tab, Tool};
     pub(crate) use crate::inventory::{InventoryEvent, Item, Slot};
+    pub(crate) use crate::loading::*;
+    pub(crate) use crate::tabs::{CurrentPotion, Tab, Tool};
+    pub(crate) use crate::tool_tips::ToolTipData;
+    pub(crate) use crate::utils::ConstHandles;
 }
 
 use crate::actions::ActionsPlugin;
@@ -30,10 +32,11 @@ use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
-use player::{Player, LookData};
+use player::{LookData, Player};
 
 type FixedPoint = fixed::types::I16F16;
-type WaveObject = bevy_wave_collapse::objects::WaveObject<FixedPoint, mesh::MeshTextureUVS, u64, u64>;
+type WaveObject =
+    bevy_wave_collapse::objects::WaveObject<FixedPoint, mesh::MeshTextureUVS, u64, u64>;
 type WaveMesh = bevy_wave_collapse::prelude::WaveMesh<FixedPoint, mesh::MeshTextureUVS>;
 type WaveBuilder = bevy_wave_collapse::prelude::WaveBuilder<FixedPoint, mesh::MeshTextureUVS>;
 type RVec3 = bevy_wave_collapse::prelude::RVec3<FixedPoint>;
@@ -51,7 +54,7 @@ enum GameState {
     // Here the main menu is drawn and waiting for player interaction
     MainMenu,
     // Here the player can change settings
-    SettingsMenu
+    SettingsMenu,
 }
 
 pub struct GamePlugin;
@@ -70,7 +73,9 @@ impl Plugin for GamePlugin {
             .init_resource::<utils::VoidHandles>()
             .add_plugin(tabs::TabPlugin)
             .add_plugin(toolbar::ToolBarPlugin)
-            .add_plugin(inventory::InventoryPlugin);
+            .add_plugin(inventory::InventoryPlugin)
+            .add_plugin(tool_tips::ToolTipPlugin)
+            .add_plugin(crafting::CraftingPlugin);
 
         // #[cfg(debug_assertions)]
         // {
@@ -80,12 +85,17 @@ impl Plugin for GamePlugin {
     }
 }
 
-
 pub fn setup_camera(mut commands: Commands) {
-    commands.spawn((Player, SpatialBundle::default())).with_children(|p| {
-        p.spawn((Camera3dBundle {
-            transform: Transform::from_translation(Vec3::Z * 5.),
-            ..Default::default()
-        }, LookData::default(), bevy_mod_picking::PickingCameraBundle::default()));
-    });
+    commands
+        .spawn((Player, SpatialBundle::default()))
+        .with_children(|p| {
+            p.spawn((
+                Camera3dBundle {
+                    transform: Transform::from_translation(Vec3::Z * 5.),
+                    ..Default::default()
+                },
+                LookData::default(),
+                bevy_mod_picking::PickingCameraBundle::default(),
+            ));
+        });
 }
