@@ -331,31 +331,37 @@ impl TargetPotion {
         let mut extra = None;
         match rng.gen_range(0..10) {
             0 => {
-                extra = Some(Rule::Effect(
-                    *valid_effects.iter().choose(&mut rng).unwrap(),
-                ));
+                if let Some(val) = valid_effects.iter().choose(&mut rng) {
+                    extra = Some(Rule::Effect(
+                        *val
+                    ));
+                }
             }
             1 => {
                 for _ in 0..4 {
-                    let temp = *valid_effects.iter().choose(&mut rng).unwrap();
-                    if !effect.inalienable().contains(&temp) {
-                        extra = Some(Rule::NotEffect(temp));
-                        break;
+                    if let Some(temp) = valid_effects.iter().choose(&mut rng) {
+                        if !effect.inalienable().contains(temp) {
+                            extra = Some(Rule::NotEffect(*temp));
+                            break;
+                        }
                     }
                 }
             }
             2 => {
                 for _ in 0..5 {
-                    let other = *valid_tags.iter().choose(&mut rng).unwrap();
-                    for effect in valid_effects.iter() {
-                        if effect.get_tags().contains(&other) {
-                            extra = Some(Rule::Tag(other));
+                    if let Some(other) = valid_tags.iter().choose(&mut rng) {
+                        for effect in valid_effects.iter() {
+                            if effect.get_tags().contains(other) {
+                                extra = Some(Rule::Tag(*other));
+                            }
                         }
                     }
                 }
             }
             3 => {
-                extra = Some(Rule::NotTag(*valid_tags.iter().choose(&mut rng).unwrap()));
+                if let Some(val) = valid_tags.iter().choose(&mut rng) {
+                    extra = Some(Rule::NotTag(*val));
+                }
             }
             _ => {}
         }

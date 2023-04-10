@@ -94,7 +94,7 @@ pub fn setup_camera(mut commands: Commands) {
                 },
                 LookData::default(),
                 bevy_mod_picking::PickingCameraBundle::default(),
-                bevy_atmosphere::prelude::AtmosphereCamera::default(),
+                // bevy_atmosphere::prelude::AtmosphereCamera::default(),
             ));
         },);
 }

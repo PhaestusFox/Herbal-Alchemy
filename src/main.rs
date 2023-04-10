@@ -36,7 +36,7 @@ fn main() {
             keys: Vec::with_capacity(0),
             ..Default::default()
         })
-        .add_plugin(bevy_atmosphere::prelude::AtmospherePlugin)
+        //.add_plugin(bevy_atmosphere::prelude::AtmospherePlugin)
         .run();
 }
 
