@@ -89,7 +89,7 @@ pub fn setup_camera(mut commands: Commands) {
         .with_children(|p| {
             p.spawn((
                 Camera3dBundle {
-                    transform: Transform::from_translation(Vec3::Z * 5.),
+                    transform: Transform::from_translation(Vec3::new(1.,45.0f32.to_radians(),1.) * 5.0).looking_at(Vec3::ZERO, Vec3::Y),
                     ..Default::default()
                 },
                 LookData::default(),

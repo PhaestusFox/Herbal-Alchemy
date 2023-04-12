@@ -24,11 +24,16 @@ impl Default for PlayerSettings {
     }
 }
 
-#[derive(Default, Component)]
+#[derive(Component)]
 pub struct LookData {
-    offset: Vec3,
     yaw: f32,
     pitch: f32,
+}
+
+impl Default for LookData {
+    fn default() -> Self {
+        LookData {yaw: 0., pitch: 45.0f32.to_radians() }
+    }
 }
 
 fn look_mode(input: Res<Input<MouseButton>>) -> bool {
@@ -114,12 +119,11 @@ fn player_look(
     for (mut transfrom, mut data) in player.iter_mut() {
         data.yaw += total.x * setting.sensitivity;
         data.pitch += total.y * setting.sensitivity;
-        data.pitch = data.pitch.clamp(0., 1.5);
+        data.pitch = data.pitch.clamp(0.1, 1.5);
         let cos = data.yaw.cos();
         let sin = data.yaw.sin();
-        data.offset = Vec3::new(cos - sin, data.pitch, cos + sin);
 
-        transfrom.translation = data.offset * 5.0;
+        transfrom.translation = Vec3::new(cos - sin, data.pitch, cos + sin) * 5.0;
         transfrom.look_at(Vec3::ZERO, Vec3::Y);
     }
 }
