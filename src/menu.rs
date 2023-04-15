@@ -2,7 +2,6 @@ use crate::loading::FontAssets;
 use crate::player::PlayerSettings;
 use crate::GameState;
 use bevy::prelude::*;
-use bevy_pkv::PkvStore;
 
 pub struct MenuPlugin;
 
@@ -16,7 +15,8 @@ impl Plugin for MenuPlugin {
             .add_system(cleanup_menu.in_schedule(OnExit(GameState::MainMenu)))
             .add_system(setup_settings_menu.in_schedule(OnEnter(GameState::SettingsMenu)))
             .add_system(click_settings_button.in_set(OnUpdate(GameState::SettingsMenu)))
-            .add_system(cleanup_menu.in_schedule(OnExit(GameState::SettingsMenu)));
+            .add_system(cleanup_menu.in_schedule(OnExit(GameState::SettingsMenu)))
+            .add_system(save_settings.in_schedule(OnExit(GameState::SettingsMenu)));
     }
 }
 
@@ -121,11 +121,8 @@ fn setup_settings_menu(
     mut commands: Commands,
     font_assets: Res<FontAssets>,
     button_colors: Res<ButtonColors>,
-    pkv: Res<PkvStore>,
+    settings: ResMut<PlayerSettings>,
 ) {
-    let settigns = pkv
-        .get::<PlayerSettings>("player settings")
-        .expect("player settings to load");
     commands
         .spawn((
             NodeBundle {
@@ -189,7 +186,7 @@ fn setup_settings_menu(
                     .with_children(|parent| {
                         parent.spawn((
                             TextBundle::from_section(
-                                format!("Sensitivity: {}", settigns.sensitivity),
+                                format!("Sensitivity: {}", settings.sensitivity),
                                 TextStyle {
                                     font: font_assets.fira_sans.clone(),
                                     font_size: 40.0,
@@ -277,7 +274,7 @@ fn setup_settings_menu(
                     .with_children(|parent| {
                         parent.spawn((
                             TextBundle::from_section(
-                                format!("Pan Speed: {}", settigns.speed),
+                                format!("Pan Speed: {}", settings.speed),
                                 TextStyle {
                                     font: font_assets.fira_sans.clone(),
                                     font_size: 40.0,
@@ -385,7 +382,7 @@ fn cleanup_menu(mut commands: Commands, button: Query<Entity, With<MenuButtonCle
 }
 
 fn click_settings_button(
-    mut pkv: ResMut<PkvStore>,
+    mut settings: ResMut<PlayerSettings>,
     button_colors: Res<ButtonColors>,
     mut state: ResMut<NextState<GameState>>,
     mut interaction_query: Query<
@@ -394,9 +391,6 @@ fn click_settings_button(
     >,
     mut text: Query<(&mut Text, &MenuButton)>,
 ) {
-    let mut settings = pkv
-        .get::<PlayerSettings>("player settings")
-        .expect("Settings to exist");
     for (interaction, mut color, button) in &mut interaction_query {
         match *interaction {
             Interaction::Clicked => match button {
@@ -436,6 +430,8 @@ fn click_settings_button(
             }
         }
     }
-    pkv.set("player settings", &settings)
-        .expect("Can Save Settings");
+}
+
+fn save_settings(mut pkv: ResMut<bevy_pkv::PkvStore>, settings: ResMut<PlayerSettings>) {
+    let _ = pkv.set("player settings", settings.as_ref());
 }

@@ -15,12 +15,24 @@ pub struct PlayerSettings {
     pub sensitivity: f32,
 }
 
-impl Default for PlayerSettings {
-    fn default() -> Self {
-        PlayerSettings {
-            speed: 1.,
-            sensitivity: 0.005,
+impl FromWorld for PlayerSettings {
+    fn from_world(world: &mut World) -> Self {
+        let pkv_store = world.resource_mut::<PkvStore>();
+        match pkv_store.get("player settings") {
+            Err(e) => {match e {
+                bevy_pkv::GetError::NotFound => {},
+                e => {
+                    world.send_event(crate::msg_event::PlayerMessage::error(format!("Error Getting Settings; {}", e)));
+                },
+            }
+            PlayerSettings {
+                speed: 1.,
+                sensitivity: 0.005,
+            }
+            },
+            Ok(val) => val
         }
+        
     }
 }
 
@@ -54,25 +66,7 @@ impl Plugin for PlayerPlugin {
         })
         .add_system(move_player.in_set(OnUpdate(Tab::World)).run_if(move_mode))
         .add_system(player_look.in_set(OnUpdate(Tab::World)).run_if(look_mode))
-        .add_system(setup_settings.on_startup());
-    }
-}
-
-fn setup_settings(mut pkv: ResMut<PkvStore>) {
-    if let Err(e) = pkv.get::<PlayerSettings>("player settings") {
-        match e {
-            bevy_pkv::GetError::NotFound => {
-                if let Err(e) = pkv.set("player settings", &PlayerSettings::default()) {
-                    error!("{}", e);
-                }
-            }
-            e => {
-                error!("PKV Error for Player Settings {}", e);
-                if let Err(e) = pkv.set("player settings", &PlayerSettings::default()) {
-                    error!("{}", e);
-                }
-            }
-        }
+        .init_resource::<PlayerSettings>();
     }
 }
 
@@ -81,11 +75,8 @@ fn move_player(
     mut player_query: Query<(&mut Transform, &Children), With<Player>>,
     camera: Query<&Transform, Without<Player>>,
     mut mouse_move: EventReader<MouseMotion>,
-    pkv: Res<PkvStore>,
+    setting: Res<PlayerSettings>,
 ) {
-    let setting = pkv
-        .get::<PlayerSettings>("player settings")
-        .expect("player settings are loaded");
     let mut player_movement = Vec2::ZERO;
     for MouseMotion { delta } in mouse_move.iter() {
         player_movement += *delta;
@@ -107,11 +98,8 @@ fn move_player(
 fn player_look(
     mut player: Query<(&mut Transform, &mut LookData)>,
     mut mouse_move: EventReader<MouseMotion>,
-    pkv: Res<PkvStore>,
+    setting: Res<PlayerSettings>,
 ) {
-    let setting = pkv
-        .get::<PlayerSettings>("player settings")
-        .expect("player settings is loaded");
     let mut total = Vec2::ZERO;
     for MouseMotion { delta } in mouse_move.iter() {
         total += *delta;

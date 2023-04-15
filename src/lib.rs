@@ -13,6 +13,8 @@ mod tool_tips;
 mod toolbar;
 mod utils;
 
+mod msg_event;
+
 mod prelude {
     pub(crate) use super::GameState;
     pub(crate) use crate::inventory::{InventoryEvent, Item, Slot};
