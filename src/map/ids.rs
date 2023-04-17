@@ -41,29 +41,27 @@ pub trait Hex: Copy + Sized + std::ops::Add<Self, Output = Self> {
     }
 }
 
-pub struct HexRangeIterator<T: Hex> {
+pub struct HexRangeIterator {
     q: std::ops::RangeInclusive<i32>,
     current_q: i32,
     r: std::ops::RangeInclusive<i32>,
     size: i32,
-    marker: std::marker::PhantomData<T>,
 }
 
-impl<T: Hex> HexRangeIterator<T> {
-    pub fn new(range: u32) -> HexRangeIterator<T> {
+impl HexRangeIterator {
+    pub fn new(range: u32) -> HexRangeIterator {
         let range = range as i32;
         HexRangeIterator {
             q: -range + 1..=range,
             current_q: -range,
             r: 0..=range,
             size: range,
-            marker: Default::default(),
         }
     }
 }
 
-impl<T: Hex> Iterator for HexRangeIterator<T> {
-    type Item = T;
+impl Iterator for HexRangeIterator {
+    type Item = CellId;
     fn next(&mut self) -> Option<Self::Item> {
         match self.r.next() {
             None => match self.q.next() {
@@ -71,31 +69,31 @@ impl<T: Hex> Iterator for HexRangeIterator<T> {
                     self.current_q = q;
                     self.r = (-self.size).max(-q - self.size)..=(self.size).min(-q + self.size);
                     if let Some(r) = self.r.next() {
-                        Some(T::new(self.current_q, r))
+                        Some(CellId::new(self.current_q, r))
                     } else {
                         None
                     }
                 }
                 None => None,
             },
-            Some(r) => Some(T::new(self.current_q, r)),
+            Some(r) => Some(CellId::new(self.current_q, r)),
         }
     }
 }
 
-pub struct HexRingIterator<T: Hex> {
+pub struct HexRingIterator {
     radius: u32,
     current_r: std::ops::Range<u32>,
-    current: T,
+    current: CellId,
     edge: std::iter::Peekable<std::slice::Iter<'static, HexNeighbour>>,
 }
 
-impl<T: Hex> HexRingIterator<T> {
-    pub fn new(radius: u32) -> HexRingIterator<T> {
+impl HexRingIterator {
+    pub fn new(radius: u32) -> HexRingIterator {
         Self {
             radius,
             current_r: 0..radius,
-            current: T::new(-(radius as i32), 0),
+            current: CellId::new(-(radius as i32), 0),
             edge: if radius != 0 {
                 [
                     HexNeighbour::One,
@@ -114,8 +112,8 @@ impl<T: Hex> HexRingIterator<T> {
     }
 }
 
-impl<T: Hex> Iterator for HexRingIterator<T> {
-    type Item = T;
+impl Iterator for HexRingIterator {
+    type Item = CellId;
     fn next(&mut self) -> Option<Self::Item> {
         let Some(neighbor) = self.edge.peek() else {return None;};
         if self.current_r.next().is_some() {
@@ -127,21 +125,21 @@ impl<T: Hex> Iterator for HexRingIterator<T> {
             if self.radius != 0 {
                 self.next()
             } else {
-                Some(T::ZERO)
+                Some(CellId::ZERO)
             }
         }
     }
 }
 
-pub struct HexSpiralIterator<T: Hex> {
+pub struct HexSpiralIterator {
     radius: u32,
     max_radius: u32,
-    current_ring: HexRingIterator<T>,
+    current_ring: HexRingIterator,
 }
 
-impl<T: Hex> HexSpiralIterator<T> {
+impl HexSpiralIterator {
     #[allow(dead_code)]
-    pub fn new(radius: u32) -> HexSpiralIterator<T> {
+    pub fn new(radius: u32) -> HexSpiralIterator {
         Self {
             current_ring: HexRingIterator::new(0),
             radius: 0,
@@ -150,8 +148,8 @@ impl<T: Hex> HexSpiralIterator<T> {
     }
 }
 
-impl<T: Hex> Iterator for HexSpiralIterator<T> {
-    type Item = T;
+impl Iterator for HexSpiralIterator {
+    type Item = CellId;
     fn next(&mut self) -> Option<Self::Item> {
         self.current_ring.next().or_else(|| {
             self.radius += 1;
@@ -164,23 +162,23 @@ impl<T: Hex> Iterator for HexSpiralIterator<T> {
     }
 }
 
-pub trait WithOffset<T: Hex, Iter: Sized + Iterator<Item = T>> {
-    fn with_offset(self, offset: T) -> OffsetIter<T, Iter>;
+pub trait WithOffset<Iter: Sized + Iterator<Item = CellId>> {
+    fn with_offset(self, offset: CellId) -> OffsetIter<Iter>;
 }
 
-impl<T: Hex, Iter: Iterator<Item = T>> WithOffset<T, Iter> for Iter {
-    fn with_offset(self, offset: T) -> OffsetIter<T, Iter> {
+impl<Iter: Iterator<Item = CellId>> WithOffset<Iter> for Iter {
+    fn with_offset(self, offset: CellId) -> OffsetIter<Iter> {
         OffsetIter { offset, iter: self }
     }
 }
 
-pub struct OffsetIter<T: Hex, Iter: Iterator<Item = T> + Sized> {
-    offset: T,
+pub struct OffsetIter<Iter: Iterator<Item = CellId> + Sized> {
+    offset: CellId,
     iter: Iter,
 }
 
-impl<T: Hex, Iter: Iterator<Item = T>> Iterator for OffsetIter<T, Iter> {
-    type Item = T;
+impl<Iter: Iterator<Item = CellId>> Iterator for OffsetIter<Iter> {
+    type Item = CellId;
     fn next(&mut self) -> Option<Self::Item> {
         Some(self.offset + self.iter.next()?)
     }
@@ -282,7 +280,6 @@ impl<'de> serde::de::Visitor<'de> for HexIdVisitor {
 }
 
 impl CellId {
-
     pub const fn new(q: i32, r: i32) -> CellId {
         Self { q, r }
     }
