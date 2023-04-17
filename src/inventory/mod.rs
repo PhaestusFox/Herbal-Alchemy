@@ -473,6 +473,8 @@ fn show_inventory(tabs: Res<BarEntitys>, mut visibility: Query<&mut Visibility>)
 }
 
 fn item_events(
+    mut commands: Commands,
+    selected: Query<(Entity, &Slot), With<SelectedSlot>>,
     mut events: EventReader<InventoryEvent>,
     mut slots: Query<&mut Item>,
     hotbar: Res<HotBar>,
@@ -504,6 +506,11 @@ fn item_events(
                     (None, Some(id)) => inventory.0[id],
                     _ => unreachable!(),
                 };
+                if let Ok((entity, selected)) = selected.get_single() {
+                    if selected == slot {
+                        commands.entity(entity).remove::<SelectedSlot>();
+                    }
+                }
                 if let Ok(mut item) = slots.get_mut(id) {
                     *item = Item::Empty;
                 }

@@ -12,21 +12,27 @@ use winit::window::Icon;
 
 fn main() {
     let mut app = App::new();
-    app.insert_resource(Msaa::Off)
+    app.insert_resource(PkvStore::new("PhoxCorp", "HerbalAlchemy"))
+        .insert_resource(Msaa::Off)
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Herbal Alchemy".to_string(), // ToDo
-                resolution: (1440., 720.).into(),
-                canvas: Some("#bevy".to_owned()),
-                ..default()
-            }),
-            ..default()
-        }))
-        .insert_resource(PkvStore::new("PhoxCorp", "HerbalAlchemy"))
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Herbal Alchemy".to_string(), // ToDo
+                        resolution: (1440., 720.).into(),
+                        canvas: Some("#bevy".to_owned()),
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(AssetPlugin {
+                    watch_for_changes: true,
+                    ..Default::default()
+                }),
+        )
         .add_plugin(GamePlugin)
-        .add_system(set_window_icon.on_startup())
-        .add_system(herbal_alchemy::setup_camera.on_startup());
+        .add_system(set_window_icon.on_startup());
     #[cfg(debug_assertions)]
     app.add_plugin(bevy_editor_pls::EditorPlugin::default());
     app.add_plugins(bevy_mod_picking::DefaultPickingPlugins)
@@ -36,7 +42,6 @@ fn main() {
             keys: Vec::with_capacity(0),
             ..Default::default()
         })
-        //.add_plugin(bevy_atmosphere::prelude::AtmospherePlugin)
         .run();
 }
 

@@ -74,7 +74,7 @@ impl PlantTrait for PalmTree {
     fn spawn(cell: &MapCell, mut parent: EntityCommands) {
         parent.with_children(|p| {
             p.spawn((
-                PbrBundle {
+                MaterialMeshBundle::<CustomMaterial> {
                     material: Handle::weak(ConstHandles::WaveMaterial.into()),
                     mesh: Handle::weak("objs/Palm.obj#Nut".into()),
                     transform: Transform::from_translation(cell.seed_offset()),
@@ -122,7 +122,7 @@ fn grow_palm(
                         .with_children(|p| {
                             for i in 0..6 {
                                 p.spawn((
-                                    PbrBundle {
+                                    MaterialMeshBundle::<CustomMaterial> {
                                         transform: Transform::from_translation(
                                             PalmTree::leaf_offset(),
                                         )
@@ -153,7 +153,7 @@ fn grow_palm(
                     commands.entity(entity).with_children(|p| {
                         for i in 0..3 {
                             p.spawn((
-                                PbrBundle {
+                                MaterialMeshBundle::<CustomMaterial> {
                                     transform: Transform::from_translation(
                                         PalmTree::coconut_offset(i),
                                     )

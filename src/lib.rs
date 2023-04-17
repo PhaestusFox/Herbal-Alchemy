@@ -1,3 +1,4 @@
+#![feature(adt_const_params)]
 mod actions;
 mod audio;
 mod crafting;
@@ -15,13 +16,22 @@ mod utils;
 
 mod msg_event;
 
+mod shader;
+
 mod prelude {
     pub(crate) use super::GameState;
     pub(crate) use crate::inventory::{InventoryEvent, Item, Slot};
     pub(crate) use crate::loading::*;
+    pub use crate::map::MapCell;
+    pub(crate) use crate::mesh::{RVec3, WaveBuilder, WaveMesh, WaveObject};
     pub(crate) use crate::tabs::{CurrentPotion, Tab, Tool};
     pub(crate) use crate::tool_tips::ToolTipData;
     pub(crate) use crate::utils::ConstHandles;
+    pub type FixedPoint = fixed::types::I16F16;
+    pub use super::shader::CustomMaterial;
+    pub use crate::inventory::SelectedSlot;
+    pub use crate::crafting::potions::PotionEffect;
+    pub use crate::msg_event::PlayerMessage;
 }
 
 use crate::actions::ActionsPlugin;
@@ -35,11 +45,7 @@ use bevy::app::App;
 // use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use player::{LookData, Player};
-
-type FixedPoint = fixed::types::I16F16;
-type WaveObject =
-    bevy_wave_collapse::objects::WaveObject<FixedPoint, mesh::MeshTextureUVS, u64, u64>;
-type WaveMesh = bevy_wave_collapse::prelude::WaveMesh<FixedPoint, mesh::MeshTextureUVS>;
+use prelude::CustomMaterial;
 
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
@@ -62,6 +68,7 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<GameState>()
+            .add_asset::<CustomMaterial>()
             .add_plugin(LoadingPlugin)
             .add_plugin(MenuPlugin)
             .add_plugin(ActionsPlugin)
@@ -75,7 +82,11 @@ impl Plugin for GamePlugin {
             .add_plugin(toolbar::ToolBarPlugin)
             .add_plugin(inventory::InventoryPlugin)
             .add_plugin(tool_tips::ToolTipPlugin)
-            .add_plugin(crafting::CraftingPlugin);
+            .add_plugin(crafting::CraftingPlugin)
+            .add_plugin(mesh::MeshPlugin)
+            .add_plugin(shader::ShaderPlugin)
+            .add_system(setup_camera.on_startup())
+            .add_plugin(msg_event::MsgPlugin);
 
         // #[cfg(debug_assertions)]
         // {
@@ -85,18 +96,21 @@ impl Plugin for GamePlugin {
     }
 }
 
-pub fn setup_camera(mut commands: Commands) {
+fn setup_camera(mut commands: Commands) {
     commands
         .spawn((Player, SpatialBundle::default()))
         .with_children(|p| {
             p.spawn((
                 Camera3dBundle {
-                    transform: Transform::from_translation(Vec3::new(1.,45.0f32.to_radians(),1.) * 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+                    transform: Transform::from_translation(
+                        Vec3::new(1., 45.0f32.to_radians(), 1.) * 5.0,
+                    )
+                    .looking_at(Vec3::ZERO, Vec3::Y),
                     ..Default::default()
                 },
                 LookData::default(),
                 bevy_mod_picking::PickingCameraBundle::default(),
                 // bevy_atmosphere::prelude::AtmosphereCamera::default(),
             ));
-        },);
+        });
 }

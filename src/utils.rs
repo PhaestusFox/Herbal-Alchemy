@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use bevy::{
     asset::{AssetLoader, HandleId, LoadedAsset},
     prelude::*,
@@ -12,14 +13,14 @@ impl FromWorld for VoidHandles {
     fn from_world(world: &mut World) -> Self {
         let mut data = Vec::with_capacity(1);
         world.resource_scope(
-            |world: &mut World, mut matts: Mut<Assets<StandardMaterial>>| {
+            |world: &mut World, mut matts: Mut<Assets<CustomMaterial>>| {
                 let asset_server = world.resource::<AssetServer>();
                 data.push(
                     matts
                         .set(
                             ConstHandles::WaveMaterial,
-                            StandardMaterial {
-                                unlit: true,
+                            CustomMaterial {
+                                // unlit: true,
                                 base_color_texture: Some(asset_server.load("textures/mesh.png")),
                                 ..Default::default()
                             },
@@ -58,7 +59,7 @@ impl AssetLoader for ObjLoader {
         load_context: &'a mut bevy::asset::LoadContext,
     ) -> bevy::utils::BoxedFuture<'a, Result<(), bevy::asset::Error>> {
         Box::pin(async {
-            let wave = crate::WaveMesh::from_obj_str(String::from_utf8_lossy(bytes).as_ref())?;
+            let wave = WaveMesh::from_obj_str(String::from_utf8_lossy(bytes).as_ref())?;
             for (label, mesh) in wave.into_iter() {
                 load_context.set_labeled_asset(
                     &label,

@@ -19,20 +19,23 @@ impl FromWorld for PlayerSettings {
     fn from_world(world: &mut World) -> Self {
         let pkv_store = world.resource_mut::<PkvStore>();
         match pkv_store.get("player settings") {
-            Err(e) => {match e {
-                bevy_pkv::GetError::NotFound => {},
-                e => {
-                    world.send_event(crate::msg_event::PlayerMessage::error(format!("Error Getting Settings; {}", e)));
-                },
+            Err(e) => {
+                match e {
+                    bevy_pkv::GetError::NotFound => {}
+                    e => {
+                        world.send_event(crate::msg_event::PlayerMessage::error(format!(
+                            "Error Getting Settings; {}",
+                            e
+                        )));
+                    }
+                }
+                PlayerSettings {
+                    speed: 1.,
+                    sensitivity: 0.005,
+                }
             }
-            PlayerSettings {
-                speed: 1.,
-                sensitivity: 0.005,
-            }
-            },
-            Ok(val) => val
+            Ok(val) => val,
         }
-        
     }
 }
 
@@ -44,7 +47,10 @@ pub struct LookData {
 
 impl Default for LookData {
     fn default() -> Self {
-        LookData {yaw: 0., pitch: 45.0f32.to_radians() }
+        LookData {
+            yaw: 0.,
+            pitch: 45.0f32.to_radians(),
+        }
     }
 }
 

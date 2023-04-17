@@ -131,16 +131,15 @@ fn update_growth(time: Res<Time>, mut parts: Query<&mut GrothProgress>) {
 fn plant_plant(
     mut commands: Commands,
     cells: Query<(Entity, &Interaction), (Without<Plant>, Changed<Interaction>)>,
-    mut seed: Query<(Entity, &mut Item, &Slot), With<SelectedSlot>>,
+    mut seed: Query<(&Item, &Slot), With<SelectedSlot>>,
     mut events: EventWriter<InventoryEvent>,
 ) {
     for (e, interaction) in &cells {
         if let Interaction::Clicked = interaction {
-            if let Ok((entity, seed, slot)) = seed.get_single_mut() {
+            if let Ok((seed, slot)) = seed.get_single_mut() {
                 if let Item::Ingredient(plant, PlantPart::Seed) = *seed {
                     commands.entity(e).insert(plant);
                     events.send(InventoryEvent::RemoveItem(*slot));
-                    commands.entity(entity).remove::<SelectedSlot>();
                 }
             }
         }

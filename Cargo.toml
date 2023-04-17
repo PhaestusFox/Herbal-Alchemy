@@ -69,7 +69,8 @@ thiserror = "*"
 bevy_console = "*"
 clap = "*"
 indexmap = "*"
-bevy_atmosphere = "*"
+belly = {git = "https://github.com/jkb0o/belly.git"}
+bitflags = "*"
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.28", default-features = false }
