@@ -5,6 +5,11 @@ body {
     width: 100%;
     height: 100%;
 }
+
+#loading label {
+    font-size: 100;
+}
+
 .controls {
     width: 200px;
     height: 200px;
@@ -47,35 +52,39 @@ button .button-foreground {
 
 .left {
     background-color: #FF0000;
+    justify-content: center;
+    flex-direction: column;
+    position-type: absolute;
     left: 0px;
     width: 10%;
     height: 100%;
 }
 
-.center {
-    flex-direction: column;
-    background-color: #00FF00;
-    margin: auto;
-    flex-grow: 1;
-    height: 100%;
-}
-
 .right {
     background-color: #0000FF;
+    justify-content: center;
+    flex-direction: column;
     right: 0px;
     width: 10%;
     height: 100%;
+    position-type: absolute;
 }
 
 .top {
+    position-type: absolute;
     top: 0px;
     height: 10%;
+    width: 80%;
     background-color: #00FFFF;
+    right: 10%;
 }
 
 .bottom {
+    position-type: absolute;
     bottom: 0px;
+    width: 80%;
     height: 10%;
+    left: 10%;
     background-color: #FFFF00;
 }
 
@@ -84,6 +93,125 @@ button .button-foreground {
     justify-content: center;
     align-items: center;
     align-content: center;
-    background-color: #FF00FF;
+    background-color: #FF00FF00;
     flex-grow: 1;
+}
+
+.button-foreground {
+    background-color: #AAAAAA;
+}
+
+button.tab {
+    width: 90%;
+    min-height: 60px;
+    aspect-ratio: 1;
+}
+
+button.tool {
+    width: 90%;
+    min-height: 60px;
+    aspect-ratio: 1;
+}
+
+img.icon {
+    width: 100%;
+    height: 100%;
+}
+
+.menu {
+    z-index: 1g;
+    margin: auto;
+    position-type: absolute;
+    flex-direction: column;
+    width: 33%;
+    height: 66%;
+    background-color: #333333;
+    justify-content: space-evenly;
+}
+
+.sensitivity {
+    width: 100%;
+}
+
+.speed {
+    width: 100%;
+}
+
+.mouse-settings {
+    width: 100%;
+    justify-content: space-between;
+}
+
+.mouse-settings buttongroup {
+    width: 100%;
+    justify-content: space-between;
+}
+
+.mouse-settings buttongroup button {
+    width: 100%;
+    justify-content: space-between;
+}
+
+.content {
+    flex-wrap: wrap;
+    position-type: absolute;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    height: 80%;
+}
+
+.slot {
+    width: 60px;
+    height: 60px;
+}
+
+#hotbar {
+    justify-content: space-around;
+}
+
+.slot-icon {
+    width: 100%;
+    height: 100%;
+    z-index: 1l;
+}
+
+#shop {
+    background-color: darkgray;
+}
+
+#shop #item {
+    position-type: absolute;
+    margin-left: auto;
+    margin-right: auto;
+    bottom: 15%;
+    left: 15%;
+}
+
+#shop #skip {
+    position-type: absolute;
+    margin-left: auto;
+    margin-right: auto;
+    bottom: 15%;
+    background-color: lightgray;
+    color: black;
+}
+
+#shop #turn-in {
+    position-type: absolute;
+    margin-left: auto;
+    margin-right: auto;
+    bottom: 15%;
+    right: 15%;
+    background-color: lightgray;
+    color: black;
+}
+
+label {
+    color: black;
+    font-size: 30;
+}
+
+button:pressed > span > .button-foreground {
+    background-color: #5a5a5a;
 }

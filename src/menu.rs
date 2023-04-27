@@ -1,5 +1,5 @@
 use crate::loading::FontAssets;
-use crate::player::PlayerSettings;
+use crate::prelude::*;
 use crate::GameState;
 use bevy::prelude::*;
 
@@ -13,10 +13,10 @@ impl Plugin for MenuPlugin {
             .add_system(setup_main_menu.in_schedule(OnEnter(GameState::MainMenu)))
             .add_system(click_play_button.in_set(OnUpdate(GameState::MainMenu)))
             .add_system(cleanup_menu.in_schedule(OnExit(GameState::MainMenu)))
-            .add_system(setup_settings_menu.in_schedule(OnEnter(GameState::SettingsMenu)))
-            .add_system(click_settings_button.in_set(OnUpdate(GameState::SettingsMenu)))
-            .add_system(cleanup_menu.in_schedule(OnExit(GameState::SettingsMenu)))
-            .add_system(save_settings.in_schedule(OnExit(GameState::SettingsMenu)));
+            .add_system(setup_settings_menu.in_schedule(OnEnter(GameState::Settings)))
+            .add_system(click_settings_button.in_set(OnUpdate(GameState::Settings)))
+            .add_system(cleanup_menu.in_schedule(OnExit(GameState::Settings)))
+            .add_system(save_settings.in_schedule(OnExit(GameState::Settings)));
     }
 }
 
@@ -121,7 +121,7 @@ fn setup_settings_menu(
     mut commands: Commands,
     font_assets: Res<FontAssets>,
     button_colors: Res<ButtonColors>,
-    settings: ResMut<PlayerSettings>,
+    settings: ResMut<CameraSettings>,
 ) {
     commands
         .spawn((
@@ -359,7 +359,7 @@ fn click_play_button(
         match *interaction {
             Interaction::Clicked => match button {
                 MenuButton::Play => state.set(GameState::Playing),
-                MenuButton::Settings => state.set(GameState::SettingsMenu),
+                MenuButton::Settings => state.set(GameState::Settings),
                 e => error!("Can't Click {:?} on main menu", e),
             },
             Interaction::Hovered => {
@@ -382,7 +382,7 @@ fn cleanup_menu(mut commands: Commands, button: Query<Entity, With<MenuButtonCle
 }
 
 fn click_settings_button(
-    mut settings: ResMut<PlayerSettings>,
+    mut settings: ResMut<CameraSettings>,
     button_colors: Res<ButtonColors>,
     mut state: ResMut<NextState<GameState>>,
     mut interaction_query: Query<
@@ -432,6 +432,6 @@ fn click_settings_button(
     }
 }
 
-fn save_settings(mut pkv: ResMut<bevy_pkv::PkvStore>, settings: ResMut<PlayerSettings>) {
+fn save_settings(mut pkv: ResMut<bevy_pkv::PkvStore>, settings: ResMut<CameraSettings>) {
     let _ = pkv.set("player settings", settings.as_ref());
 }

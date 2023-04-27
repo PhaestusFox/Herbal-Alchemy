@@ -66,7 +66,8 @@ impl Plugin for PalmPlugin {
             .add_system(pick_leaf.in_set(OnUpdate(Tool::Shears)))
             .add_system(pick_nut.in_set(OnUpdate(Tool::Hand)))
             .add_system(dig_root.in_set(OnUpdate(Tool::Shovel)))
-            .add_system(chop_palm.in_set(OnUpdate(Tool::Axe)));
+            .add_system(chop_palm.in_set(OnUpdate(Tool::Axe)))
+            .init_resource::<PalmAssets>();
     }
 }
 
@@ -285,4 +286,17 @@ pub(super) struct PalmAssets {
     sprout: Handle<Mesh>,
     #[asset(path = "objs/Palm.obj#Fruit")]
     fruit: Handle<Mesh>,
+}
+
+impl FromWorld for PalmAssets {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.resource::<AssetServer>();
+        PalmAssets {
+            leaf:   asset_server.load("objs/Palm.obj#Leaf"),
+            trunk:            asset_server.load("objs/Palm.obj#Trunk"),
+            seed:            asset_server.load("objs/Palm.obj#Nut"),
+            sprout:            asset_server.load("objs/Palm.obj#Sprout"),
+            fruit:            asset_server.load("objs/Palm.obj#Fruit"),
+        }
+    }
 }

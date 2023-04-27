@@ -21,9 +21,8 @@ impl Plugin for PlantPlugin {
         .register_type::<GrothProgress>()
         .register_type::<GrothStage>()
         .register_type::<PlantPart>()
-        .register_type::<Plant>();
-        app.add_collection_to_loading_state::<_, palm::PalmAssets>(GameState::Loading)
-            .add_system(plant_plant.in_set(OnUpdate(Tool::Trowl)));
+        .register_type::<Plant>()
+        .add_system(plant_plant.in_set(OnUpdate(Tool::Trowl)));
     }
 }
 
@@ -130,7 +129,7 @@ fn update_growth(time: Res<Time>, mut parts: Query<&mut GrothProgress>) {
 
 fn plant_plant(
     mut commands: Commands,
-    cells: Query<(Entity, &Interaction), (Without<Plant>, Changed<Interaction>)>,
+    cells: Query<(Entity, &Interaction), (Without<Plant>, Changed<Interaction>, With<MapCell>)>,
     mut seed: Query<(&Item, &Slot), With<SelectedSlot>>,
     mut events: EventWriter<InventoryEvent>,
 ) {

@@ -1,15 +1,14 @@
 use crate::prelude::*;
 use bevy::prelude::*;
+use belly::widgets::common::Label;
 
 pub struct ToolTipPlugin;
 
 impl Plugin for ToolTipPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_tooltip.in_schedule(OnExit(GameState::Loading)))
-            .register_type::<TimeToOpen>()
-            .add_system(move_tooltip.in_set(OnUpdate(GameState::Playing)))
-            .add_system(unhide_tooltip.in_set(OnUpdate(GameState::Playing)))
-            .add_system(update_item_tooltip.in_set(OnUpdate(GameState::Playing)));
+        app
+        .add_system(wright_tooltip.in_set(OnUpdate(GameState::Playing)))
+        .add_system(update_item_tooltip.in_set(OnUpdate(GameState::Playing)));
     }
 }
 
@@ -19,34 +18,22 @@ struct TimeToOpen(Timer);
 #[derive(Component)]
 pub struct ToolTipData(pub String);
 
-#[derive(Component)]
-struct ToolTip;
+#[derive(Component, Default)]
+pub(crate) struct ToolTip;
 #[derive(Component)]
 struct ToolTipText;
 
-fn move_tooltip(
-    query: Query<(Entity, &Interaction), (Changed<Interaction>, With<ToolTipData>)>,
-    data: Query<&ToolTipData>,
-    mut tool_tip_text: Query<&mut Text, With<ToolTipText>>,
-    mut tool_tip: Query<(&mut Visibility, &mut TimeToOpen), With<ToolTip>>,
+fn wright_tooltip(
+    query: Query<(&ToolTipData, &Interaction), (Changed<Interaction>, With<ToolTipData>)>,
+    mut tool_tip_text: Query<&mut Label, With<ToolTip>>,
 ) {
     let mut text = tool_tip_text.single_mut();
-    let (mut vis, mut open) = tool_tip.single_mut();
-    let mut set = None;
-    for (item, interaction) in &query {
+    for (data, interaction) in &query {
         if let Interaction::Hovered = interaction {
-            set = Some(item)
-        }
-        open.0.pause();
-        open.0.reset();
-    }
-    if let Some(set) = set {
-        open.0.unpause();
-        *vis = Visibility::Hidden;
-        if let Ok(data) = data.get(set) {
-            text.sections[0].value = data.0.clone();
+            text.value = data.0.clone();
         }
     }
+    
 }
 
 fn unhide_tooltip(

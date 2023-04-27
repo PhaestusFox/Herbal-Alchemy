@@ -14,10 +14,8 @@ impl Plugin for TabPlugin {
             .add_system(update_current_tab.in_set(OnUpdate(GameState::Playing)))
             .add_system(open_lab.in_schedule(OnEnter(Tab::Lab)))
             .add_system(close_lap.in_schedule(OnExit(Tab::Lab)))
-            .add_system(hide_shop.in_schedule(OnExit(Tab::Shop)))
-            .add_system(show_shop.in_schedule(OnEnter(Tab::Shop)))
-            .add_system(update_shop.in_set(OnUpdate(Tab::Shop)))
-            .add_system(hand_in.in_set(OnUpdate(Tab::Shop)));
+            // .add_system(hand_in.in_set(OnUpdate(Tab::Shop)))
+            .add_systems((change_tool, change_tab, change_state));
     }
 }
 
@@ -51,6 +49,18 @@ pub enum Tab {
     Shop,
     Inventory,
     Lab,
+}
+
+impl UiItem for Tab {
+    fn icon_path(&self) -> String {
+        match self {
+            Tab::Menu => "textures/menu.png",
+            Tab::World => "textures/map.png",
+            Tab::Shop => "textures/shop.png",
+            Tab::Inventory => "textures/inventory.png",
+            Tab::Lab => "textures/lab.png",
+        }.into()
+    }
 }
 
 impl Tab {
@@ -103,6 +113,18 @@ pub enum Tool {
     Shovel,
     Trowl,
     Shears,
+}
+
+impl UiItem for Tool {
+    fn icon_path(&self) -> String {
+        match self {
+            Tool::Hand => "textures/hand.png",
+            Tool::Axe => "textures/axe.png",
+            Tool::Shovel => "textures/shovel.png",
+            Tool::Trowl => "textures/trowl.png",
+            Tool::Shears => "textures/shears.png",
+        }.into()
+    }
 }
 
 impl Tool {
@@ -338,6 +360,39 @@ fn hand_in(
                     }
                 }
             }
+        }
+    }
+}
+
+fn change_tab(
+    query: Query<(&Interaction, &Tab), Changed<Interaction>>,
+    mut next: ResMut<NextState<Tab>>,
+) {
+    for (interaction, tab) in &query {
+        if let Interaction::Clicked = interaction {
+            next.set(*tab);
+        }
+    }
+}
+
+fn change_tool(
+    query: Query<(&Interaction, &Tool), Changed<Interaction>>,
+    mut next: ResMut<NextState<Tool>>,
+) {
+    for (interaction, tool) in &query {
+        if let Interaction::Clicked = interaction {
+            next.set(*tool);
+        }
+    }
+}
+
+fn change_state(
+    query: Query<(&Interaction, &GameState), Changed<Interaction>>,
+    mut state: ResMut<NextState<GameState>>,
+) {
+    for (interaction, current) in &query {
+        if let Interaction::Clicked = interaction {
+            state.set(current.clone());
         }
     }
 }

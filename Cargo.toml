@@ -46,13 +46,14 @@ default = [
     "bevy/x11",
     "bevy/ktx2",
     "bevy/filesystem_watcher",
-    "bevy/tonemapping_luts"
+    "bevy/tonemapping_luts",
+    "bevy/serialize"
 ]
 
 [dependencies]
-bevy = { version = "0.10", default-features = false }
+bevy = { version = "0.10", default-features = false}
 bevy_kira_audio = { version = "0.15" }
-bevy_asset_loader = { version = "0.15" }
+bevy_asset_loader = { version = "0.15", features = ["progress_tracking"]}
 rand = { version = "0.8.3" }
 bevy_wave_collapse = {git = "https://github.com/PhaestusFox/bevy_wave_collapse.git"}
 serde = "*"
@@ -71,6 +72,7 @@ clap = "*"
 indexmap = "*"
 belly = {git = "https://github.com/jkb0o/belly.git"}
 bitflags = "*"
+iyes_progress = "*"
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.28", default-features = false }

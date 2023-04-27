@@ -10,6 +10,8 @@ pub struct LoadingPlugin;
 /// If interested, take a look at <https://bevy-cheatbook.github.io/features/assets.html>
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
+        app.add_system(progress.in_set(OnUpdate(GameState::Loading)))
+            .add_plugin(iyes_progress::ProgressPlugin::new(GameState::Loading));
         app.add_loading_state(
             LoadingState::new(GameState::Loading).continue_to_state(GameState::MainMenu),
         )
@@ -45,12 +47,10 @@ pub struct TextureAssets {
 
 #[derive(AssetCollection, Resource)]
 pub struct WaveMeshAssets {
-    #[asset(path = "objs/Pots.obj#Pot")]
-    pub empty_pot: Handle<Mesh>,
-    #[asset(path = "objs/Pots.obj#Table")]
-    pub empty_table: Handle<Mesh>,
-    #[asset(path = "objs/Pots.obj#Island")]
-    pub empty_island: Handle<Mesh>,
+    #[asset(path = "objs/sand.wfo")]
+    pub sand: Handle<WaveMesh>,
+    #[asset(path = "objs/water.wfo")]
+    pub water: Handle<WaveMesh>,
 }
 
 #[derive(AssetCollection, Resource)]
@@ -143,4 +143,17 @@ pub struct ItemIcons {
     pub potion_7: Handle<Image>,
     #[asset(path = "icons/potion_d.png")]
     pub potion_d: Handle<Image>,
+}
+
+#[derive(Component, Default)]
+pub struct LoadingProgress;
+use belly::widgets::common::Label;
+fn progress(
+    progress: Res<iyes_progress::ProgressCounter>,
+    mut query: Query<&mut Label, With<LoadingProgress>>,
+) {
+    let progress = progress.progress();
+    for mut label in query.iter_mut() {
+        label.value = format!("Loading: {:?}", progress)
+    }
 }

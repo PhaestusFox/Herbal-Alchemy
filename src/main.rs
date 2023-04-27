@@ -32,10 +32,12 @@ fn main() {
                 }),
         )
         .add_plugin(GamePlugin)
-        .add_system(set_window_icon.on_startup());
+        .add_system(set_window_icon.on_startup())
+        .register_type::<ZIndex>();
     #[cfg(debug_assertions)]
     app.add_plugin(bevy_editor_pls::EditorPlugin::default());
     app.add_plugins(bevy_mod_picking::DefaultPickingPlugins)
+    .add_plugin(bevy_mod_picking::DebugCursorPickingPlugin)
         .add_plugin(bevy_ninepatch::NinePatchPlugin::<()>::default())
         .add_plugin(bevy_console::ConsolePlugin)
         .insert_resource(bevy_console::ConsoleConfiguration {

@@ -23,11 +23,18 @@ impl PlayerMessage {
             level: Level::ERROR,
         }
     }
-    pub fn warn(msg: impl Into<String>, color: Color) -> PlayerMessage {
+    pub fn warn(msg: impl Into<String>) -> PlayerMessage {
         PlayerMessage {
             msg: msg.into(),
-            color: Color::RED,
+            color: Color::YELLOW,
             level: Level::WARN,
+        }
+    }
+    pub fn say(msg: impl Into<String>, color: Color) -> PlayerMessage {
+        PlayerMessage {
+            msg: msg.into(),
+            color,
+            level: Level::INFO,
         }
     }
 }

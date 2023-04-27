@@ -9,36 +9,6 @@ pub struct PlayerPlugin;
 #[derive(Component)]
 pub struct Player;
 
-#[derive(Resource, Serialize, Deserialize)]
-pub struct PlayerSettings {
-    pub speed: f32,
-    pub sensitivity: f32,
-}
-
-impl FromWorld for PlayerSettings {
-    fn from_world(world: &mut World) -> Self {
-        let pkv_store = world.resource_mut::<PkvStore>();
-        match pkv_store.get("player settings") {
-            Err(e) => {
-                match e {
-                    bevy_pkv::GetError::NotFound => {}
-                    e => {
-                        world.send_event(crate::msg_event::PlayerMessage::error(format!(
-                            "Error Getting Settings; {}",
-                            e
-                        )));
-                    }
-                }
-                PlayerSettings {
-                    speed: 1.,
-                    sensitivity: 0.005,
-                }
-            }
-            Ok(val) => val,
-        }
-    }
-}
-
 #[derive(Component)]
 pub struct LookData {
     yaw: f32,
@@ -54,12 +24,12 @@ impl Default for LookData {
     }
 }
 
-fn look_mode(input: Res<Input<MouseButton>>) -> bool {
-    input.pressed(MouseButton::Middle)
+fn look_mode(input: Res<Input<MouseButton>>, setting: Res<CameraSettings>) -> bool {
+    input.pressed(setting.rotate_cam)
 }
 
-fn move_mode(input: Res<Input<MouseButton>>) -> bool {
-    input.pressed(MouseButton::Left)
+fn move_mode(input: Res<Input<MouseButton>>, setting: Res<CameraSettings>) -> bool {
+    input.pressed(setting.move_cam)
 }
 
 /// This plugin handles player related stuff like movement
@@ -71,8 +41,7 @@ impl Plugin for PlayerPlugin {
             color: Color::WHITE,
         })
         .add_system(move_player.in_set(OnUpdate(Tab::World)).run_if(move_mode))
-        .add_system(player_look.in_set(OnUpdate(Tab::World)).run_if(look_mode))
-        .init_resource::<PlayerSettings>();
+        .add_system(player_look.in_set(OnUpdate(Tab::World)).run_if(look_mode));
     }
 }
 
@@ -81,7 +50,7 @@ fn move_player(
     mut player_query: Query<(&mut Transform, &Children), With<Player>>,
     camera: Query<&Transform, Without<Player>>,
     mut mouse_move: EventReader<MouseMotion>,
-    setting: Res<PlayerSettings>,
+    setting: Res<CameraSettings>,
 ) {
     let mut player_movement = Vec2::ZERO;
     for MouseMotion { delta } in mouse_move.iter() {
@@ -104,7 +73,7 @@ fn move_player(
 fn player_look(
     mut player: Query<(&mut Transform, &mut LookData)>,
     mut mouse_move: EventReader<MouseMotion>,
-    setting: Res<PlayerSettings>,
+    setting: Res<CameraSettings>,
 ) {
     let mut total = Vec2::ZERO;
     for MouseMotion { delta } in mouse_move.iter() {

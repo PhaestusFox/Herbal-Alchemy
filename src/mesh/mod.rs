@@ -5,6 +5,7 @@ use crate::{
     prelude::*,
 };
 use bevy::prelude::*;
+use bevy_asset_loader::prelude::LoadingStateAppExt;
 use bevy_wave_collapse::{objects::hexs_map::HexTrig, prelude::*};
 use rand::Rng;
 use strum::IntoEnumIterator;
@@ -24,9 +25,10 @@ pub struct MeshPlugin;
 
 impl Plugin for MeshPlugin {
     fn build(&self, app: &mut App) {
-        app.init_asset_loader::<WaveMeshObjLoader<FixedPoint, MeshTextureUVS>>()
+        app.add_asset::<WaveMesh>()
+            .add_asset::<WaveObject>()
+            .init_asset_loader::<WaveMeshObjLoader<FixedPoint, MeshTextureUVS>>()
             .init_resource::<IslandObjects>();
-        // .add_system(build_map.in_schedule(OnExit(GameState::Loading)));
     }
 }
 
