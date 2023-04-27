@@ -52,14 +52,15 @@ pub enum Tab {
 }
 
 impl UiItem for Tab {
-    fn icon_path(&self) -> String {
+    fn icon_path(&self) -> &'static str {
         match self {
             Tab::Menu => "textures/menu.png",
             Tab::World => "textures/map.png",
             Tab::Shop => "textures/shop.png",
             Tab::Inventory => "textures/inventory.png",
             Tab::Lab => "textures/lab.png",
-        }.into()
+        }
+        .into()
     }
 }
 
@@ -116,14 +117,14 @@ pub enum Tool {
 }
 
 impl UiItem for Tool {
-    fn icon_path(&self) -> String {
+    fn icon_path(&self) -> &'static str {
         match self {
             Tool::Hand => "textures/hand.png",
             Tool::Axe => "textures/axe.png",
             Tool::Shovel => "textures/shovel.png",
             Tool::Trowl => "textures/trowl.png",
             Tool::Shears => "textures/shears.png",
-        }.into()
+        }
     }
 }
 

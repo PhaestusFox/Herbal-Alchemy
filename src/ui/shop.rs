@@ -1,8 +1,8 @@
+use crate::{inventory::Inventory, prelude::*};
 use belly::prelude::*;
 use bevy::prelude::*;
-use crate::{prelude::*, inventory::Inventory};
 
-pub (super) fn open_shop(
+pub(super) fn open_shop(
     mut commands: Elements,
     mut is_init: Local<bool>,
     target: Res<TargetPotion>,
@@ -10,10 +10,10 @@ pub (super) fn open_shop(
     if *is_init {
         commands.select("#shop").remove_class("hidden");
     } else {
-    let id = Slot::Shop;
-    let bgc = BackgroundColor(Color::WHITE);
-    let val = target.potion_request();
-    commands.commands().add(eml!{
+        let id = Slot::Shop;
+        let bgc = BackgroundColor(Color::WHITE);
+        let val = target.potion_request();
+        commands.commands().add(eml!{
         <div id="shop" c:content>
             <div c:shop-text>
                 <label bind:value=from!(TargetPotion:potion_request())
@@ -42,6 +42,6 @@ pub (super) fn open_shop(
             <button id="skip" flat on:press=run!(|ctx| ctx.commands().insert_resource(TargetPotion::new()))>{"Skip"}</button>
         </div>
     });
-    *is_init = true;
+        *is_init = true;
     }
 }

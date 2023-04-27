@@ -49,6 +49,7 @@ pub struct HexRangeIterator {
 }
 
 impl HexRangeIterator {
+    #[allow(dead_code)]
     pub fn new(range: u32) -> HexRangeIterator {
         let range = range as i32;
         HexRangeIterator {

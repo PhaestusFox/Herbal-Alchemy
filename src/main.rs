@@ -37,7 +37,7 @@ fn main() {
     #[cfg(debug_assertions)]
     app.add_plugin(bevy_editor_pls::EditorPlugin::default());
     app.add_plugins(bevy_mod_picking::DefaultPickingPlugins)
-    .add_plugin(bevy_mod_picking::DebugCursorPickingPlugin)
+        .add_plugin(bevy_mod_picking::DebugCursorPickingPlugin)
         .add_plugin(bevy_ninepatch::NinePatchPlugin::<()>::default())
         .add_plugin(bevy_console::ConsolePlugin)
         .insert_resource(bevy_console::ConsoleConfiguration {

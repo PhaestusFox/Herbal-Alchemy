@@ -81,28 +81,6 @@ pub struct UiAssets {
     pub shears_icon: Handle<Image>,
 }
 
-impl UiAssets {
-    pub fn get_tab_icon(&self, tab: Tab) -> Handle<Image> {
-        match tab {
-            Tab::Menu => self.menu_icon.clone(),
-            Tab::World => self.map_icon.clone(),
-            Tab::Shop => self.shop_icon.clone(),
-            Tab::Inventory => self.inventory_icon.clone(),
-            Tab::Lab => self.lab_icon.clone(),
-        }
-    }
-
-    pub fn get_tool_icon(&self, tool: Tool) -> Handle<Image> {
-        match tool {
-            Tool::Hand => self.hand_icon.clone(),
-            Tool::Axe => self.axe_icon.clone(),
-            Tool::Shovel => self.shovel_icon.clone(),
-            Tool::Trowl => self.trowl_icon.clone(),
-            Tool::Shears => self.shears_icon.clone(),
-        }
-    }
-}
-
 #[derive(AssetCollection, Resource)]
 pub struct ItemIcons {
     #[asset(path = "icons/null.png")]

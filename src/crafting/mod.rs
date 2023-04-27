@@ -75,10 +75,9 @@ enum PotionAcction {
 
 fn brew_potion(
     mut log: ConsoleCommand<PotionCommand>,
-    mut item: Query<(Entity, &mut Item, &Slot), With<SelectedSlot>>,
+    item: Query<(&Item, &Slot), With<SelectedSlot>>,
     mut potion: ResMut<CurrentPotion>,
     mut events: EventWriter<InventoryEvent>,
-    mut commands: Commands,
 ) {
     let Some(Ok(PotionCommand { action })) = log.take() else {return;};
     match action {
@@ -86,7 +85,7 @@ fn brew_potion(
             events.send(InventoryEvent::AddItem(potion.0));
         }
         PotionAcction::Add => {
-            let Ok((entity, mut item, slot)) = item.get_single_mut() else {reply_failed!(log, "No Item Selected; Click an item to select it."); return;};
+            let Ok((item, slot)) = item.get_single() else {reply_failed!(log, "No Item Selected; Click an item to select it."); return;};
             if let Err(e) = potion.0.brew(*item) {
                 reply_failed!(log, "{e}");
             } else {

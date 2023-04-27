@@ -1,8 +1,6 @@
 use crate::prelude::*;
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
-use bevy_pkv::PkvStore;
-use serde::{Deserialize, Serialize};
 
 pub struct PlayerPlugin;
 

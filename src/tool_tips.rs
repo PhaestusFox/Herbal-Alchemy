@@ -1,14 +1,13 @@
 use crate::prelude::*;
-use bevy::prelude::*;
 use belly::widgets::common::Label;
+use bevy::prelude::*;
 
 pub struct ToolTipPlugin;
 
 impl Plugin for ToolTipPlugin {
     fn build(&self, app: &mut App) {
-        app
-        .add_system(wright_tooltip.in_set(OnUpdate(GameState::Playing)))
-        .add_system(update_item_tooltip.in_set(OnUpdate(GameState::Playing)));
+        app.add_system(wright_tooltip.in_set(OnUpdate(GameState::Playing)))
+            .add_system(update_item_tooltip.in_set(OnUpdate(GameState::Playing)));
     }
 }
 
@@ -33,7 +32,6 @@ fn wright_tooltip(
             text.value = data.0.clone();
         }
     }
-    
 }
 
 fn unhide_tooltip(

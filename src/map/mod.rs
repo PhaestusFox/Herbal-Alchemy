@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{crafting::potions::PotionEffect, inventory::SelectedSlot, plants::Plant, prelude::*};
 use bevy::{asset::HandleId, prelude::*, utils::HashSet};
 use bevy_mod_picking::PickableBundle;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use uuid::uuid;
 
 use self::ids::{CellId, Hex};
@@ -40,8 +40,8 @@ impl Plugin for MapPlugin {
             )
             .register_type::<MapCell>()
             .add_system(spawn_map.in_schedule(OnExit(GameState::Loading)))
-        .add_system(make_island.in_set(OnUpdate(Tool::Hand)))
-        .add_system(save_map.in_set(OnUpdate(GameState::Playing)));
+            .add_system(make_island.in_set(OnUpdate(Tool::Hand)))
+            .add_system(save_map.in_set(OnUpdate(GameState::Playing)));
     }
 }
 
@@ -50,15 +50,23 @@ fn spawn_map(mut commands: Commands, pkv: Res<bevy_pkv::PkvStore>) {
     let old_map = match pkv.get::<HashMap<CellId, (MapCell, Option<Plant>)>>("Map") {
         Ok(mut val) => {
             let mut need_tree = true;
-            val.values().map(|(_, tree)| if tree.is_some() {need_tree = false;}).count();
+            val.values()
+                .map(|(_, tree)| {
+                    if tree.is_some() {
+                        need_tree = false;
+                    }
+                })
+                .count();
             if need_tree {
                 val.insert(CellId::ZERO, (MapCell::Sand, Some(Plant::Palm)));
             };
             val
-        },
+        }
         Err(e) => {
             error!("{:?}", e);
-            let mut new_map = ids::HexSpiralIterator::new(2).map(|id| (id, (MapCell::Water, None))).collect::<HashMap<CellId, (MapCell, Option<Plant>)>>();
+            let mut new_map = ids::HexSpiralIterator::new(2)
+                .map(|id| (id, (MapCell::Water, None)))
+                .collect::<HashMap<CellId, (MapCell, Option<Plant>)>>();
             new_map.insert(CellId::ZERO, (MapCell::Sand, Some(Plant::Palm)));
             new_map
         }
@@ -71,17 +79,20 @@ fn spawn_map(mut commands: Commands, pkv: Res<bevy_pkv::PkvStore>) {
 
     //todo add setting for world size
     for id in ids::HexSpiralIterator::new(2) {
-        let (cell, plant) = if let Some(val) = old_map.get(&id) {*val} else {(MapCell::Water, None)};
-        let mut entity = commands
-            .spawn((
-                id,
-                cell,
-                PickableBundle::default(),
-                SpatialBundle::INHERITED_IDENTITY,
-                Handle::<CustomMaterial>::weak(ConstHandles::WaveMaterial.into()),
-                Handle::<Mesh>::default(),
-                Name::new(format!("Cell {}", id)),
-            ));
+        let (cell, plant) = if let Some(val) = old_map.get(&id) {
+            *val
+        } else {
+            (MapCell::Water, None)
+        };
+        let mut entity = commands.spawn((
+            id,
+            cell,
+            PickableBundle::default(),
+            SpatialBundle::INHERITED_IDENTITY,
+            Handle::<CustomMaterial>::weak(ConstHandles::WaveMaterial.into()),
+            Handle::<Mesh>::default(),
+            Name::new(format!("Cell {}", id)),
+        ));
         entity.set_parent(root);
         if let Some(plant) = plant {
             entity.insert(plant);
@@ -169,7 +180,9 @@ fn update_cell_transform(
     }
 }
 
-#[derive(Component, Clone, Copy, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(
+    Component, Clone, Copy, Debug, Reflect, PartialEq, Eq, Default, Serialize, Deserialize,
+)]
 #[reflect(Component)]
 pub enum MapCell {
     #[default]
@@ -217,7 +230,6 @@ fn make_island(
     mut click_cell: Query<(&mut MapCell, &Interaction), Changed<Interaction>>,
     mut events: EventWriter<InventoryEvent>,
     mut msgs: EventWriter<crate::msg_event::PlayerMessage>,
-    mut commands: Commands,
 ) {
     let Ok((item, slot)) = current.get_single() else {return;};
     let potion = if let Item::Potion(id) = item {

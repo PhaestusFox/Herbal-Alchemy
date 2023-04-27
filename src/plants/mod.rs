@@ -4,7 +4,6 @@ use crate::prelude::*;
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use serde::{Deserialize, Serialize};
 mod palm;
-use bevy_asset_loader::prelude::*;
 
 pub struct PlantPlugin;
 

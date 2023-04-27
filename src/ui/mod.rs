@@ -1,10 +1,10 @@
-mod menu;
 mod inventory;
+mod menu;
 mod shop;
 
-use bevy::prelude::*;
-use belly::prelude::*;
 use crate::prelude::*;
+use belly::prelude::*;
+use bevy::prelude::*;
 
 use menu::*;
 
@@ -34,28 +34,22 @@ impl Plugin for MenuPlugin {
 }
 
 pub trait UiItem {
-    fn icon_path(&self) -> String;
+    fn icon_path(&self) -> &'static str;
     fn background_color(&self) -> Color {
         Color::WHITE
     }
 }
 
-fn hide_pannel<const PANNEL_ID: &'static str>(
-    mut elements: Elements,
-) {
+fn hide_pannel<const PANNEL_ID: &'static str>(mut elements: Elements) {
     elements.select(PANNEL_ID).add_class("hidden");
 }
 
-fn remove_pannel<const PANNEL_ID: &'static str>(
-    mut elements: Elements,
-) {
+fn remove_pannel<const PANNEL_ID: &'static str>(mut elements: Elements) {
     elements.select(PANNEL_ID).remove();
 }
 
-fn hide_hidden(
-    mut query: Query<(Entity, &Element, &mut Visibility), Changed<Element>>,
-) {
-    for (entity, element, mut visibility) in &mut query {
+fn hide_hidden(mut query: Query<(&Element, &mut Visibility), Changed<Element>>) {
+    for (element, mut visibility) in &mut query {
         if element.classes.contains(&"hidden".into()) {
             *visibility = Visibility::Hidden
         } else {

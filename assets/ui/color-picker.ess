@@ -215,3 +215,22 @@ label {
 button:pressed > span > .button-foreground {
     background-color: #5a5a5a;
 }
+
+#Msgs {
+    position-type: absolute;
+    left: 10%;
+    top: 10%;
+    width: auto;
+    height: auto;
+    z-index: 1g;
+    flex-wrap: wrap;
+}
+
+.msg {
+    background-color: gray;
+    width: 100%;
+    height: auto;
+    min-height: 60px;
+    color: black;
+    font-size: 30px;
+}

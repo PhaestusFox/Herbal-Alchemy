@@ -292,11 +292,11 @@ impl FromWorld for PalmAssets {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
         PalmAssets {
-            leaf:   asset_server.load("objs/Palm.obj#Leaf"),
-            trunk:            asset_server.load("objs/Palm.obj#Trunk"),
-            seed:            asset_server.load("objs/Palm.obj#Nut"),
-            sprout:            asset_server.load("objs/Palm.obj#Sprout"),
-            fruit:            asset_server.load("objs/Palm.obj#Fruit"),
+            leaf: asset_server.load("objs/Palm.obj#Leaf"),
+            trunk: asset_server.load("objs/Palm.obj#Trunk"),
+            seed: asset_server.load("objs/Palm.obj#Nut"),
+            sprout: asset_server.load("objs/Palm.obj#Sprout"),
+            fruit: asset_server.load("objs/Palm.obj#Fruit"),
         }
     }
 }

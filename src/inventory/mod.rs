@@ -2,7 +2,7 @@ use crate::{
     crafting::{potions::PotionEffect, Process},
     prelude::*,
 };
-use bevy::{ecs::world::EntityMut, prelude::*, utils::HashMap};
+use bevy::{prelude::*, utils::HashMap};
 use bevy_pkv::PkvStore;
 use serde::{Deserialize, Serialize};
 
@@ -14,8 +14,7 @@ pub struct InventoryPlugin;
 
 impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .init_resource::<Inventory>()
+        app.init_resource::<Inventory>()
             .add_event::<InventoryEvent>()
             .register_type::<Slot>()
             .register_type::<Item>()
@@ -79,9 +78,12 @@ impl FromWorld for Inventory {
         match pkv.get::<Inventory>("inventory") {
             Ok(inv) => inv,
             Err(e) => {
-                world.send_event(PlayerMessage::error(format!("Failed to load inventory {:?}", e)));
+                world.send_event(PlayerMessage::error(format!(
+                    "Failed to load inventory {:?}",
+                    e
+                )));
                 Inventory(default())
-            },
+            }
         }
     }
 }
@@ -148,7 +150,7 @@ pub enum Item {
 }
 
 impl UiItem for Item {
-    fn icon_path(&self) -> String {
+    fn icon_path(&self) -> &'static str {
         match self {
             Item::Empty => "icons/empty.png",
             Item::Potion(0) => "icons/potion_5.png",
@@ -185,7 +187,7 @@ impl UiItem for Item {
                     "icons/cube.png"
                 }
             }
-        }.into()
+        }
     }
 
     fn background_color(&self) -> Color {
@@ -203,45 +205,6 @@ impl UiItem for Item {
 }
 
 impl Item {
-    fn get_icon(&self, asset: &ItemIcons) -> Handle<Image> {
-        match self {
-            Item::Ingredient(plant, part) => match plant {
-                Plant::Palm => match part {
-                    PlantPart::Leaf => asset.palm_leaf.clone(),
-                    PlantPart::Seed => asset.palm_seed.clone(),
-                    PlantPart::Fruit => asset.palm_fruit.clone(),
-                    PlantPart::Bark => asset.palm_bark.clone(),
-                    PlantPart::Stem => asset.palm_wood.clone(),
-                    PlantPart::Root => asset.palm_root.clone(),
-                    _ => {
-                        error!("Item {:?}, dose not have an icon yet", self);
-                        asset.null.clone()
-                    }
-                },
-            },
-            Item::Empty => asset.empty.clone(),
-            Item::Potion(0) => asset.potion_5.clone(),
-            Item::Potion(255) => asset.potion_d.clone(),
-            Item::Potion(id) => match id % 8 {
-                0 => asset.potion_0.clone(),
-                1 => asset.potion_1.clone(),
-                2 => asset.potion_2.clone(),
-                3 => asset.potion_3.clone(),
-                4 => asset.potion_4.clone(),
-                5 => asset.potion_5.clone(),
-                6 => asset.potion_6.clone(),
-                7 => asset.potion_7.clone(),
-                _ => unreachable!(),
-            },
-            Item::Intimidate(_, effect) => {
-                if effect & 0xf > (effect >> 4) & 0xf {
-                    asset.ash.clone()
-                } else {
-                    asset.cube.clone()
-                }
-            }
-        }
-    }
     pub fn brew(&mut self, other: Item) -> Result<u8, crate::crafting::CraftingError> {
         use crate::crafting::CraftingError;
         match self {
@@ -364,17 +327,29 @@ pub enum Slot {
 
 impl Slot {
     pub fn iter_all() -> SlotIter {
-        SlotIter{next: Some(Slot::HotBar0), last: Slot::Inventory(INVENTORY_SIZE)}
+        SlotIter {
+            next: Some(Slot::HotBar0),
+            last: Slot::Inventory(INVENTORY_SIZE),
+        }
     }
     pub fn iter_hotbar() -> SlotIter {
-        SlotIter{next: Some(Slot::HotBar0), last: Slot::HotBar9}
+        SlotIter {
+            next: Some(Slot::HotBar0),
+            last: Slot::HotBar9,
+        }
     }
     pub fn iter_inventory() -> SlotIter {
-        SlotIter{next: Some(Slot::Inventory(0)), last: Slot::Inventory(INVENTORY_SIZE)}
+        SlotIter {
+            next: Some(Slot::Inventory(0)),
+            last: Slot::Inventory(INVENTORY_SIZE),
+        }
     }
 }
 
-pub struct SlotIter{next: Option<Slot>, last: Slot}
+pub struct SlotIter {
+    next: Option<Slot>,
+    last: Slot,
+}
 
 impl Iterator for SlotIter {
     type Item = Slot;
@@ -432,7 +407,9 @@ impl Iterator for SlotIter {
                 self.next = None;
                 Slot::Shop
             }
-            None => {return None;},
+            None => {
+                return None;
+            }
         };
         if next == self.last {
             self.next = None
@@ -541,28 +518,22 @@ impl Inventory {
     pub fn get(&self, slot: &Slot) -> Option<Item> {
         self.0.get(slot).cloned()
     }
-
-    pub fn get_item_icon(&self, slot: Slot) -> String {
-        if let Some(item) = self.get(&slot) {
-            item.icon_path()
-        } else {
-            "icons/empty.png".into()
-        }
-    }
 }
 
 impl Serialize for Inventory {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer {
+    where
+        S: serde::Serializer,
+    {
         self.0.serialize(serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for Inventory {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de> {
+    where
+        D: serde::Deserializer<'de>,
+    {
         Ok(Inventory(HashMap::<Slot, Item>::deserialize(deserializer)?))
     }
 }

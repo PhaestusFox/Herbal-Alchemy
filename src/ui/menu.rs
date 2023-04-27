@@ -9,19 +9,8 @@ pub fn just_pressed<T: Copy + Eq + std::hash::Hash + Send + Sync + 'static>(
     move |current_state: Res<Input<T>>| current_state.just_pressed(key)
 }
 
-const COLORS: &[&'static str] = &[
-    // from https://colorswall.com/palette/105557
-    // Red     Pink       Purple     Deep Purple
-    "#f44336", "#e81e63", "#9c27b0", "#673ab7",
-    // Indigo  Blue       Light Blue Cyan
-    "#3f51b5", "#2196f3", "#03a9f4", "#00bcd4",
-    // Teal    Green      Light      Green Lime
-    "#009688", "#4caf50", "#8bc34a", "#cddc39",
-    // Yellow  Amber      Orange     Deep Orange
-    "#ffeb3b", "#ffc107", "#ff9800", "#ff5722",
-];
 use crate::loading::LoadingProgress;
-pub (super) fn setup_loading(mut commands: Commands) {
+pub(super) fn setup_loading(mut commands: Commands) {
     commands.add(StyleSheet::load("ui/color-picker.ess"));
     commands.add(eml! {
         <body id="loading">
@@ -32,7 +21,9 @@ pub (super) fn setup_loading(mut commands: Commands) {
 
 // Resource
 pub(super) fn setup_ui(mut commands: Commands, mut is_init: Local<bool>) {
-    if *is_init {return;}
+    if *is_init {
+        return;
+    }
     commands.add(eml! {
             <buttongroup c:left with=Tab>
                 <for tab in = Tab::iter()>
@@ -42,13 +33,13 @@ pub(super) fn setup_ui(mut commands: Commands, mut is_init: Local<bool>) {
                 </for>
             </buttongroup> // end left
     });
-    commands.add(eml!{
+    commands.add(eml! {
         <div c:top>
             <label c:tool-tip value="tooltip" with=ToolTip/>
         </div> // end top
     });
     let bgc = BackgroundColor(Color::WHITE);
-    commands.add(eml!{
+    commands.add(eml! {
         <div id="hotbar" c:bottom>
             <for id in = Slot::iter_hotbar()>
                 <button s:background-color=managed() flat c:slot with=(id, Item, bgc)>
@@ -69,23 +60,29 @@ pub(super) fn setup_ui(mut commands: Commands, mut is_init: Local<bool>) {
     *is_init = true;
 }
 
-pub(super) fn detect_change(tab: Res<State<Tab>>, tool: Res<State<Tool>>,
+pub(super) fn detect_change(
+    tab: Res<State<Tab>>,
+    tool: Res<State<Tool>>,
     mut tabs: Query<&mut BtnGroup, (With<Tab>, Without<Tool>)>,
     mut tools: Query<&mut BtnGroup, (With<Tool>, Without<Tab>)>,
 ) {
     if tab.is_changed() {
-        if let Ok(mut btn) = tabs.get_single_mut(){
+        if let Ok(mut btn) = tabs.get_single_mut() {
             btn.value = format!("{:?}", tab.0);
         }
     }
     if tool.is_changed() {
-        if let Ok(mut btn) = tools.get_single_mut(){
+        if let Ok(mut btn) = tools.get_single_mut() {
             btn.value = format!("{:?}", tool.0);
         }
     }
 }
 
-pub(super) fn open_menu(state: Res<State<GameState>>, mut elements: Elements, settings: Res<CameraSettings>) {
+pub(super) fn open_menu(
+    state: Res<State<GameState>>,
+    mut elements: Elements,
+    settings: Res<CameraSettings>,
+) {
     elements.select(".menu").add_class("hidden");
     match state.0 {
         GameState::Loading => {}

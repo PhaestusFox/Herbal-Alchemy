@@ -32,14 +32,13 @@ mod prelude {
     pub type FixedPoint = fixed::types::I16F16;
     pub use super::shader::CustomMaterial;
     pub use crate::crafting::potions::PotionEffect;
+    pub use crate::crafting::potions::TargetPotion;
     pub use crate::inventory::SelectedSlot;
     pub use crate::msg_event::PlayerMessage;
     pub use crate::settings::*;
     pub use crate::ui::UiItem;
-    pub use crate::crafting::potions::TargetPotion;
 }
 
-use crate::audio::InternalAudioPlugin;
 use crate::loading::LoadingPlugin;
 use crate::player::PlayerPlugin;
 use crate::ui::MenuPlugin;
@@ -72,8 +71,8 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<GameState>()
-        .add_plugin(msg_event::MsgPlugin)
-        .add_asset::<CustomMaterial>()
+            .add_plugin(msg_event::MsgPlugin)
+            .add_asset::<CustomMaterial>()
             .add_plugin(LoadingPlugin)
             .add_plugin(tabs::TabPlugin)
             .add_plugin(MenuPlugin)
@@ -87,7 +86,7 @@ impl Plugin for GamePlugin {
             .init_resource::<utils::VoidHandles>()
             //     .add_plugin(toolbar::ToolBarPlugin)
             .add_plugin(inventory::InventoryPlugin)
-                .add_plugin(tool_tips::ToolTipPlugin)
+            .add_plugin(tool_tips::ToolTipPlugin)
             .add_plugin(crafting::CraftingPlugin)
             .add_plugin(shader::ShaderPlugin)
             .add_system(setup_camera.on_startup());
