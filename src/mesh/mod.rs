@@ -18,6 +18,11 @@ use islands::DynamicIsland;
 use self::islands::StaticIsland;
 pub struct MeshPlugin;
 
+const NAMES: [&'static str; 2] = [
+    "Sand",
+    "Water",
+];
+
 impl Plugin for MeshPlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<WaveMesh>()
@@ -57,12 +62,12 @@ impl FromWorld for IslandObjects {
             let asset_server = world.resource::<AssetServer>();
             let obj = objs.set(
                 MapCell::Sand.to_handle_id(),
-                DynamicIsland::new::<"Sand">(asset_server, "objs/sand.wfo"),
+                DynamicIsland::new::<0>(asset_server, "objs/sand.wfo"),
             );
             data.push(obj);
             let obj = objs.set(
                 MapCell::Water.to_handle_id(),
-                StaticIsland::new::<"Water">(asset_server, "objs/water.wfo"),
+                StaticIsland::new::<1>(asset_server, "objs/water.wfo"),
             );
             data.push(obj);
         });

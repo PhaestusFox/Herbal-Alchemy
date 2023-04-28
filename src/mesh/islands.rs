@@ -16,7 +16,7 @@ enum IslandComponet {
 }
 
 impl DynamicIsland {
-    pub fn new<const NAME: &'static str>(asset_server: &AssetServer, path: &str) -> WaveObject {
+    pub fn new<const NAME: usize>(asset_server: &AssetServer, path: &str) -> WaveObject {
         let mut meshes: HashMap<Connection, Handle<WaveMesh>> = HashMap::new();
         for component in IslandComponet::iter() {
             meshes.insert(
@@ -32,7 +32,7 @@ impl DynamicIsland {
         }
     }
 
-    fn build<const NAME: &'static str>(
+    fn build<const NAME: usize>(
         obj: &WaveObject,
         offset: RVec3,
         assets: &Assets<WaveMesh>,
@@ -45,11 +45,11 @@ impl DynamicIsland {
             assets
                 .get(obj.get(Core).ok_or(BakeError::MeshNotSet {
                     mesh: "Core",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?)
                 .ok_or(BakeError::MeshNotFound {
                     mesh: "Core",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?,
         )?;
         let mut is_water = [true; 6];
@@ -63,19 +63,19 @@ impl DynamicIsland {
             let stright = if is_water[(6 - i) % 6] {
                 obj.get(ConnectWater).ok_or(BakeError::MeshNotSet {
                     mesh: "Stright Water",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?
             } else {
                 obj.get(ConnectSand).ok_or(BakeError::MeshNotSet {
                     mesh: "Stright Flat",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?
             };
             let mut stright = assets
                 .get(stright)
                 .ok_or(BakeError::MeshNotFound {
                     mesh: "Stright",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?
                 .clone();
             let cos = FixedPoint::ROTATIONS_COS[i];
@@ -85,26 +85,26 @@ impl DynamicIsland {
             let corner = match (is_water[(6 - i) % 6], is_water[(5 - i) % 6]) {
                 (true, true) => obj.get(ConnectWaterWater).ok_or(BakeError::MeshNotSet {
                     mesh: "Corner Water Water",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?,
                 (true, false) => obj.get(ConnectWaterSand).ok_or(BakeError::MeshNotSet {
                     mesh: "Corner Water Flat",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?,
                 (false, true) => obj.get(ConnectSandWater).ok_or(BakeError::MeshNotSet {
                     mesh: "Corner Flat Water",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?,
                 (false, false) => obj.get(ConnectSandSand).ok_or(BakeError::MeshNotSet {
                     mesh: "Corner Flat Flat",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?,
             };
             let mut corner = assets
                 .get(corner)
                 .ok_or(BakeError::MeshNotFound {
                     mesh: "Corner",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?
                 .clone();
             let cos = FixedPoint::ROTATIONS_COS[i];
@@ -127,7 +127,7 @@ impl Into<std::borrow::Cow<'static, str>> for IslandComponet {
 pub struct StaticIsland;
 
 impl StaticIsland {
-    pub fn new<const NAME: &'static str>(asset_server: &AssetServer, path: &str) -> WaveObject {
+    pub fn new<const NAME: usize>(asset_server: &AssetServer, path: &str) -> WaveObject {
         let mut meshes: HashMap<Connection, Handle<WaveMesh>> = HashMap::new();
         meshes.insert(
             Connection::new(IslandComponet::Core),
@@ -140,7 +140,7 @@ impl StaticIsland {
             can_connect_fn: |_| false,
         }
     }
-    fn build<const NAME: &'static str>(
+    fn build<const NAME: usize>(
         obj: &WaveObject,
         offset: RVec3,
         assets: &Assets<WaveMesh>,
@@ -152,11 +152,11 @@ impl StaticIsland {
             assets
                 .get(obj.get(IslandComponet::Core).ok_or(BakeError::MeshNotSet {
                     mesh: "Core",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?)
                 .ok_or(BakeError::MeshNotFound {
                     mesh: "Core",
-                    obj: NAME,
+                    obj: NAMES[NAME],
                 })?,
         )
     }

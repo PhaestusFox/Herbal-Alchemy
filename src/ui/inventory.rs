@@ -8,7 +8,7 @@ pub struct InventoryUiPlugin;
 impl Plugin for InventoryUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(open_inventory.in_schedule(OnEnter(Tab::Inventory)))
-            .add_system(super::hide_pannel::<"#inventory">.in_schedule(OnExit(Tab::Inventory)))
+            .add_system(super::hide_pannel::<3>.in_schedule(OnExit(Tab::Inventory)))
             .add_system(populate_inventory)
             .add_system(update_inventory.run_if(|inventory: Res<Inventory>| inventory.is_changed()))
             .add_system(update_inventory.in_schedule(OnExit(GameState::MainMenu)))

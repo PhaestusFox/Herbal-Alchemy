@@ -25,10 +25,10 @@ impl Plugin for MenuPlugin {
                 ),
             )
             .add_plugin(inventory::InventoryUiPlugin)
-            .add_system(remove_pannel::<"#loading">.in_schedule(OnExit(GameState::Loading)))
+            .add_system(remove_pannel::<0>.in_schedule(OnExit(GameState::Loading)))
             .add_system(shop::open_shop.in_schedule(OnEnter(Tab::Shop)))
-            .add_system(hide_pannel::<"#shop">.in_schedule(OnExit(Tab::Shop)))
-            .add_system(hide_pannel::<".menu">.run_if(state_changed::<Tab>()))
+            .add_system(hide_pannel::<1>.in_schedule(OnExit(Tab::Shop)))
+            .add_system(hide_pannel::<2>.run_if(state_changed::<Tab>()))
             .add_system(hide_hidden);
     }
 }
@@ -40,12 +40,19 @@ pub trait UiItem {
     }
 }
 
-fn hide_pannel<const PANNEL_ID: &'static str>(mut elements: Elements) {
-    elements.select(PANNEL_ID).add_class("hidden");
+const PANNEL_IDS: [&'static str; 4] = [
+    "#loading",
+    "#shop",
+    ".menu",
+    "#inventory",
+];
+
+fn hide_pannel<const PANNEL_ID: usize>(mut elements: Elements) {
+    elements.select(PANNEL_IDS[PANNEL_ID]).add_class("hidden");
 }
 
-fn remove_pannel<const PANNEL_ID: &'static str>(mut elements: Elements) {
-    elements.select(PANNEL_ID).remove();
+fn remove_pannel<const PANNEL_ID: usize>(mut elements: Elements) {
+    elements.select(PANNEL_IDS[PANNEL_ID]).remove();
 }
 
 fn hide_hidden(mut query: Query<(&Element, &mut Visibility), Changed<Element>>) {
