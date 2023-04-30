@@ -1,37 +1,36 @@
+use crate::prelude::*;
 use bevy::prelude::*;
-use indexmap::IndexSet as HashSet;
+use std::collections::HashSet as HashSet;
 use rand::{seq::IteratorRandom, Rng};
 use std::fmt::Display;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use PotionEffect::*;
+
+use super::tags::TagNames;
 impl PotionEffect {
-    pub fn get_potion_effects(val: u8) -> Vec<PotionEffect> {
+    pub fn get_potion_effects(val: Tags) -> Vec<PotionEffect> {
         use PotionEffect::*;
         let mut effects = Vec::new();
-        match val {
-            0 => return vec![],
-            // if all bits a set its boring
-            255 => return vec![InstantDeath],
-            // adding only unmodifider fruit will give you 20
-            20 => effects.push(Saturation),
-            _ => {}
-        }
         // the higer the number of bits the stronger the effect
-        match val.count_ones() {
+        match val.count() {
+            //no tags is just water
+            0 => return vec![],
+            //all tags is too easy
+            8 => return vec![InstantDeath],
             //too many bits is boring
-            8 | 7 | 6 => effects.push(Paralysis),
+            7 | 6 => effects.push(Paralysis),
             _ => {}
         }
-        // odd bits are "good"
-        if val & 0b01010101 == 0b01010101 {
+        // life over time is Regeneration
+        if val.has_all([TagNames::Life, TagNames::Time]) {
             effects.push(Regeneration)
         }
-        // poison is the opisite of regeneration
-        if val & 0b10101010 == 0b10101010 {
+        // time without life is Poison
+        if val.has_tag(TagNames::Time) && !val.has_tag(TagNames::Life) {
             effects.push(Poison)
         }
-        match val % 0b01000101 {
+        match val.0 % 0b01000101 {
             // 01000101 is as "Lucky" number
             0 => effects.push(Luck),
             // if you just miss being "Lucky" you are "Unlucky"
@@ -40,68 +39,68 @@ impl PotionEffect {
             0b01000100 => effects.push(BadLuck),
             _ => {}
         }
-        for i in 0..8 {
-            // too many bits are bad
-            if val.rotate_left(i) & 0b11111 == 0b11111 {
-                effects.push(Nausea)
+        // conflicting bits are bad
+        if val.in_group(crate::crafting::tags::TagGroups::Elemental).count() > 3
+        {
+            effects.push(Nausea)
+        }
+        if !val.has_all([TagNames::Life, TagNames::Tropical]) { //add 
+            match (val.has_tag(TagNames::Fire), val.has_tag(TagNames::Air), val.has_tag(TagNames::Water), val.has_tag(TagNames::Earth)) {
+                (true, true, true  , true) => effects.push(InfernoBlizzard),
+                (true, true, false , false) => effects.push(FireStorm),
+                (false, true, true , false) => effects.push(IceStorm),
+                (true, false, true , false) => effects.push(EmberFrost),
+                (true, false, false, true) => effects.push(FireBall),
+                (false, false, true, true) => effects.push(SnowBall),
+                (true, true, true, false) => effects.push(FrostFire),
+                (true, false, true, true) => effects.push(Explosion),
+                (false, true, true, true) => effects.push(Blizzard),
+                (true, true, false, true) => effects.push(Sandstorm),// todo!(add fire, air, earth effect)
+                (false, true, false, true) |
+                (true, false, false, false) |
+                (false, false, false, true) |
+                (false, true, false, false) |
+                (false, false, true, false) |
+                (false, false, false, false) => {}
             }
         }
-        // if there is more "Ice" bits then "fire" bits
-        match ((val & 0xf0).count_ones(), (val & 0x0f).count_ones()) {
-            (4, 0) => effects.push(Blizzard),
-            (3, 0) => effects.push(IceStorm),
-            (4, 1) => effects.push(IceStorm),
-            (3, 2) => effects.push(FrostFire),
-            (4, 2) => effects.push(SnowBall),
-            (3, 1) => effects.push(SnowBall),
-            (2, 0) => effects.push(SnowBall),
-            // (3, 2) => {effects.push(EmberFrost)},
-            (4, 3) => effects.push(InfernoBlizzard),
-            (3, 4) => effects.push(InfernoBlizzard),
-            // (2, 3) => {effects.push(EmberFrost)},
-            (0, 2) => effects.push(FireBall),
-            (1, 3) => effects.push(FireBall),
-            (2, 4) => effects.push(FireBall),
-            (2, 3) => effects.push(FrostFire),
-            (1, 4) => effects.push(FireStorm),
-            (0, 3) => effects.push(FireStorm),
-            (0, 4) => effects.push(Explosion),
-            _ => {}
-        };
-        if val & 0b00100100 == 0b00100100 {
+        if val.has_all([TagNames::Water, TagNames::Time]) {
+            effects.push(Saturation)
+        }
+        if val.has_all([TagNames::Air, TagNames::Fire]) {
             effects.push(Invisibility)
         }
-        if val & 0b01011010 == 0b01000010 {
+        if val.has_all([TagNames::Life, TagNames::Fibrous]) && !val.has_all([TagNames::Earth, TagNames::Water]) {
             effects.push(Strength)
         }
-        if val & 0b10011001 == 0b00011000 {
+        if !val.has_tag(TagNames::Earth) && val.in_group(crate::crafting::tags::TagGroups::Light).count() > 0 {
             effects.push(Levitation)
         }
-        if val & 0b11001001 == 0b01001001 {
+        if val.has_all([TagNames::Time, TagNames::Life]) && !val.has_tag(TagNames::Tropical) {
             effects.push(Confusion)
         }
-        if val & 0b01010101 == 0b01010100 {
+        if val.has_all([TagNames::Life, TagNames::Earth, TagNames::Fire]) && !val.has_tag(TagNames::Time) {
             effects.push(Inflammation)
         }
-        if val & 0b01111110 == 0b01011010 {
+        if val.has_any([TagNames::Air, TagNames::Fire]) && val.has_tag(TagNames::Tropical) && !val.has_tag(TagNames::Time) {
             effects.push(Teleportation)
         }
-        if val & 0b11000011 == 0b01000010 {
+        if val.has_tag(TagNames::Earth) && !val.has_tag(TagNames::Water){
             effects.push(IslandOasis)
         }
-        if val & 0b11000011 == 0b10000001 {
+        if val.has_tag(TagNames::Water) && !val.has_tag(TagNames::Earth) {
             effects.push(TidalWave)
         }
         effects
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, strum_macros::EnumIter, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum_macros::EnumIter, Hash, serde::Serialize, serde::Deserialize)]
 pub enum PotionEffect {
     InstantDeath,
     Explosion,
     Blizzard,
-    // EmberFrost,
+    EmberFrost,
     FrostFire,
     InfernoBlizzard,
     IceStorm,
@@ -126,7 +125,7 @@ pub enum PotionEffect {
     IslandOasis,
     TidalWave,
     // Desert Mirage
-    // Sandstorm
+    Sandstorm
 }
 
 impl Display for PotionEffect {
@@ -134,29 +133,31 @@ impl Display for PotionEffect {
         f.write_fmt(format_args!("{:?}(", self))?;
         match self {
             InstantDeath => f.write_fmt(format_args!("{:08b}", 255)),
-            Blizzard => f.write_str("11110000"),
-            Explosion => f.write_str("00001111"),
-            Paralysis => f.write_str("1's >= 6"),
-            Saturation => f.write_str("00010100"),
+            Blizzard => f.write_str("Water, Earth, Air"),
+            Explosion => f.write_str("Fire, Water, Earth"),
+            Paralysis => f.write_str("6 > tags"),
+            Saturation => f.write_str("Time + Water"),
             Luck => f.write_str("self % 01000101 = 0"),
             BadLuck => f.write_str("self % 0100101 = 1 | -1"),
-            Nausea => f.write_str("5 contiguous 1's"),
-            Poison => f.write_str("x1x1x1x1"),
-            Regeneration => f.write_str("1x1x1x1x"),
-            Invisibility => f.write_str("xx1xx1xx"),
-            Strength => f.write_str("x1xxxx1x"),
-            Levitation => f.write_str("0xx11xx0"),
-            Confusion => f.write_str("01xx1xx1"),
-            Inflammation => f.write_str("01x1x1xx"),
-            Teleportation => f.write_str("x10101x1"),
-            FireBall => f.write_str("1's in lower 4 - 1's in upper 5 == 2"),
-            SnowBall => f.write_str("1's in upper 4 - 1's in lower 5 == 2"),
-            FrostFire => f.write_str("1's in upper = 2 | 3 & 1's in lower 4 = 2 | 3"),
-            InfernoBlizzard => f.write_str("1's in upper = 3 | 4 & 1's in lower 4 = 3 | 4"),
-            IceStorm => f.write_str("1's in lower 4 - 1's in upper 5 == 3"),
-            FireStorm => f.write_str("1's in upper 4 - 1's in lower 5 == 3"),
-            IslandOasis => f.write_str("01xxxx10"),
-            TidalWave => f.write_str("10xxxx01"),
+            Nausea => f.write_str("All Elemental Tags"),
+            Poison => f.write_str("Time && !Life"),
+            Regeneration => f.write_str("Time && Life"),
+            Invisibility => f.write_str("Air & Fire"),
+            Strength => f.write_str("(Life && Fibrous) && !(Earth && Water)"),
+            Levitation => f.write_str("!Earth && !Time & Light > 0"),
+            Confusion => f.write_str("Time && Life & !Tropical"),
+            Inflammation => f.write_str("Life && Earth && Fire & !Time"),
+            Teleportation => f.write_str("(Air | Fire) && Tropical & !Time"),
+            FireBall => f.write_str("Fire && Earth"),
+            SnowBall => f.write_str("Water && Earth"),
+            FrostFire => f.write_str("Fire && Air && Water"),
+            InfernoBlizzard => f.write_str("Fire && Air && Water && Air"),
+            IceStorm => f.write_str("Water && Air"),
+            FireStorm => f.write_str("Water && Fire"),
+            IslandOasis => f.write_str("Earth && !Water"),
+            TidalWave => f.write_str("Water && !Earth"),
+            EmberFrost => f.write_str("Fire && Water"),
+            Sandstorm => f.write_str("Earth && Air && Fire")
         }?;
         f.write_str(")")
     }
@@ -222,81 +223,83 @@ impl std::fmt::Display for EffectTags {
 impl PotionEffect {
     pub fn get_tags(&self) -> &'static [EffectTags] {
         match self {
-            PotionEffect::InstantDeath => &[
+            InstantDeath => &[
                 EffectTags::Death,
                 EffectTags::Instant,
                 EffectTags::Destructive,
             ],
-            PotionEffect::Explosion => &[
+            Explosion => &[
                 EffectTags::Destructive,
                 EffectTags::AreaOfEffect,
                 EffectTags::Projectile,
             ],
-            PotionEffect::Blizzard => &[
+            Blizzard => &[
                 EffectTags::AreaOfEffect,
                 EffectTags::Ice,
                 EffectTags::Weather,
                 EffectTags::Slow,
             ],
-            PotionEffect::FrostFire => {
+            FrostFire => {
                 &[EffectTags::AreaOfEffect, EffectTags::Ice, EffectTags::Fire]
             }
-            PotionEffect::InfernoBlizzard => &[
+            InfernoBlizzard => &[
                 EffectTags::AreaOfEffect,
                 EffectTags::Fire,
                 EffectTags::Ice,
                 EffectTags::Weather,
                 EffectTags::Destructive,
             ],
-            PotionEffect::IceStorm => &[
+            IceStorm => &[
                 EffectTags::AreaOfEffect,
                 EffectTags::Ice,
                 EffectTags::Weather,
                 EffectTags::Slow,
             ],
-            PotionEffect::FireStorm => &[
+            FireStorm => &[
                 EffectTags::AreaOfEffect,
                 EffectTags::Fire,
                 EffectTags::Weather,
                 EffectTags::Destructive,
             ],
-            PotionEffect::SnowBall => &[EffectTags::Projectile, EffectTags::Ice],
-            PotionEffect::FireBall => &[
+            SnowBall => &[EffectTags::Projectile, EffectTags::Ice],
+            FireBall => &[
                 EffectTags::Projectile,
                 EffectTags::Fire,
                 EffectTags::Destructive,
             ],
-            PotionEffect::Paralysis => &[
+            Paralysis => &[
                 EffectTags::Negative,
                 EffectTags::SideEffect,
                 EffectTags::Movement,
             ],
-            PotionEffect::Saturation => &[EffectTags::Positive, EffectTags::Health],
-            PotionEffect::Luck => &[EffectTags::Positive, EffectTags::Random],
-            PotionEffect::BadLuck => &[EffectTags::Negative, EffectTags::Random],
-            PotionEffect::Nausea => &[EffectTags::Negative, EffectTags::SideEffect],
-            PotionEffect::Poison => &[EffectTags::Negative, EffectTags::DamageOverTime],
-            PotionEffect::Regeneration => &[EffectTags::Positive, EffectTags::Health],
-            PotionEffect::Invisibility => &[EffectTags::Positive, EffectTags::Stealth],
-            PotionEffect::Strength => &[EffectTags::Positive, EffectTags::Movement],
-            PotionEffect::Levitation => &[EffectTags::Positive, EffectTags::Movement],
-            PotionEffect::Confusion => &[EffectTags::Negative, EffectTags::SideEffect],
-            PotionEffect::Inflammation => &[EffectTags::Negative, EffectTags::DamageOverTime],
-            PotionEffect::Teleportation => &[
+            Saturation => &[EffectTags::Positive, EffectTags::Health],
+            Luck => &[EffectTags::Positive, EffectTags::Random],
+            BadLuck => &[EffectTags::Negative, EffectTags::Random],
+            Nausea => &[EffectTags::Negative, EffectTags::SideEffect],
+            Poison => &[EffectTags::Negative, EffectTags::DamageOverTime],
+            Regeneration => &[EffectTags::Positive, EffectTags::Health],
+            Invisibility => &[EffectTags::Positive, EffectTags::Stealth],
+            Strength => &[EffectTags::Positive, EffectTags::Movement],
+            Levitation => &[EffectTags::Positive, EffectTags::Movement],
+            Confusion => &[EffectTags::Negative, EffectTags::SideEffect],
+            Inflammation => &[EffectTags::Negative, EffectTags::DamageOverTime],
+            Teleportation => &[
                 EffectTags::Positive,
                 EffectTags::Movement,
                 EffectTags::Instant,
             ],
-            PotionEffect::IslandOasis => &[
+            IslandOasis => &[
                 EffectTags::Positive,
                 EffectTags::AreaOfEffect,
                 EffectTags::Weather,
             ],
-            PotionEffect::TidalWave => &[
+            TidalWave => &[
                 EffectTags::Destructive,
                 EffectTags::AreaOfEffect,
                 EffectTags::Projectile,
             ],
+            EmberFrost => &[EffectTags::Fire, EffectTags::Ice, EffectTags::DamageOverTime, EffectTags::Destructive, EffectTags::AreaOfEffect, EffectTags::Projectile],
+            Sandstorm => &[EffectTags::Destructive, EffectTags::AreaOfEffect, EffectTags::Slow, EffectTags::Weather, EffectTags::Negative],
         }
     }
 
@@ -697,6 +700,9 @@ impl PotionEffect {
                 Regeneration,
                 Confusion,
             ],
+            EmberFrost => &[],
+            Sandstorm => &[],
+            
         }
     }
 
@@ -808,16 +814,24 @@ impl TargetPotion {
         request
     }
 
-    pub fn is_match(&self, new: u8) -> bool {
-        let Some(main) = self.main else {return new == 0;};
+    pub fn is_match(&self, new: Tags) -> Result<(), String> {
+        let Some(main) = self.main else {return if new == Tags::EMPTY {Ok(())} else {Err(String::from("Thats not water"))};};
         let effects = PotionEffect::get_potion_effects(new);
         if !effects.contains(&main) {
-            return false;
+            return Err("It Dosen't Have the needed effect".into());
         }
         match &self.extra {
-            None => true,
-            Some(Rule::Effect(effect)) => effects.contains(effect),
-            Some(Rule::NotEffect(effect)) => !effects.contains(effect),
+            None => Ok(()),
+            Some(Rule::Effect(effect)) => if effects.contains(effect) {
+                Ok(())
+            } else {
+                Err("Id Doesnt Have the added Effect".into())
+            },
+            Some(Rule::NotEffect(effect)) => if effects.contains(effect) {
+                Err("Id Have an unwanted Effect".into())
+            } else {
+                Ok(())
+            },
             Some(Rule::Tag(tag)) => {
                 let mut tags = HashSet::new();
                 for effect in effects {
@@ -825,7 +839,11 @@ impl TargetPotion {
                         tags.insert(*tag);
                     }
                 }
-                tags.contains(tag)
+                if tags.contains(tag) {
+                    Ok(())
+                } else {
+                    Err("It doesn't have the needed tag".into())
+                }
             }
             Some(Rule::NotTag(tag)) => {
                 let mut tags = HashSet::new();
@@ -834,7 +852,11 @@ impl TargetPotion {
                         tags.insert(*tag);
                     }
                 }
-                !tags.contains(tag)
+                if tags.contains(tag) {
+                    Err("It has and unwanted tag".into())
+                } else {
+                    Ok(())
+                }
             }
         }
     }
@@ -1122,11 +1144,11 @@ fn possible_potions() {
         .create(true)
         .open("potions.txt")
         .unwrap();
-    let mut map = indexmap::IndexMap::new();
+    let mut map = IndexMap::new();
     let mut reverse_map: indexmap::IndexMap<PotionEffect, Vec<u8>> = indexmap::IndexMap::new();
     for i in 0..=255u8 {
         let mut effects = HashSet::new();
-        for effect in PotionEffect::get_potion_effects(i) {
+        for effect in PotionEffect::get_potion_effects(Tags(i)) {
             effects.insert(effect);
             reverse_map.entry(effect).or_insert(Vec::new()).push(i);
         }
@@ -1148,6 +1170,8 @@ fn possible_potions() {
         }
     }
     let _ = writeln!(&mut file, "Potions => Effect");
+
+    // let potion_effect = std::fs::write("potion.effects", ron::ser::to_string_pretty(&map, ron::ser::PrettyConfig::default()).unwrap());
     for (key, val) in map.iter() {
         let _ = writeln!(&mut file, "{} = {:?}", key, val);
     }

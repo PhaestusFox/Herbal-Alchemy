@@ -1,6 +1,8 @@
 use super::*;
 use strum_macros::{EnumIter, IntoStaticStr};
 
+use super::NAMES;
+
 #[derive(Debug, Component, Hash, PartialEq, Eq)]
 pub struct DynamicIsland;
 

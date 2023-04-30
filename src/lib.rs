@@ -37,6 +37,8 @@ mod prelude {
     pub use crate::msg_event::PlayerMessage;
     pub use crate::settings::*;
     pub use crate::ui::UiItem;
+    pub use crate::crafting::tags::Tags;
+    pub use crate::inventory::Ingredient;
 }
 
 use crate::loading::LoadingPlugin;

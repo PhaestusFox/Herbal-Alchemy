@@ -55,6 +55,7 @@ bevy = { version = "0.10", default-features = false}
 bevy_kira_audio = { version = "0.15" }
 bevy_asset_loader = { version = "0.15", features = ["progress_tracking"]}
 rand = { version = "0.8.3" }
+ron = "*"
 bevy_wave_collapse = {git = "https://github.com/PhaestusFox/bevy_wave_collapse.git"}
 serde = "*"
 bevy_pkv = "*"

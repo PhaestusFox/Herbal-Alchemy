@@ -36,14 +36,13 @@ impl PalmTree {
     pub fn tool_tip_text(part: PlantPart) -> String {
         match part {
             PlantPart::Seed => format!(
-                "A coconut thats still green\nMaybe You Could Plant it ;P: {:08b}",
-                part as u8
+                "A coconut thats still green; Maybe You Could Plant it ;P:"
             ),
-            PlantPart::Leaf => format!("A Palm Fron: {:08b}", part as u8),
-            PlantPart::Root => format!("A Coconut Root: {:08b}", part as u8),
-            PlantPart::Stem => format!("A Log of a Palm Tree: {:08b}", part as u8),
-            PlantPart::Fruit => format!("A Ripe coconut\nits to old to plant: {:08b}", part as u8),
-            PlantPart::Bark => format!("A Fibers: {:08b}", part as u8),
+            PlantPart::Leaf => format!("A Palm Fron:"),
+            PlantPart::Root => format!("A Coconut Root:"),
+            PlantPart::Stem => format!("A Log of a Palm Tree:"),
+            PlantPart::Fruit => format!("A Ripe coconut its to old to plant:"),
+            PlantPart::Bark => format!("A Fibers:"),
             _ => format!(
                 "How did you get this :P [this is a bug!]: {:08b}",
                 part as u8
