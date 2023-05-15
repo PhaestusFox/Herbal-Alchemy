@@ -18,7 +18,6 @@ impl Plugin for InventoryUiPlugin {
 
 fn open_inventory(mut commands: Elements, mut is_init: Local<bool>) {
     if *is_init {
-        warn!("len : {:?}", commands.select("#inventory").entities());
         commands.select("#inventory").remove_class("hidden");
     } else {
         let bgc = BackgroundColor(Color::WHITE);

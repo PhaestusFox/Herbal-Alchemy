@@ -5,12 +5,22 @@ use bevy::prelude::*;
 use bevy_wave_collapse::{objects::hexs_map::HexTrig, prelude::*};
 use strum::IntoEnumIterator;
 use strum_macros::EnumString;
+use lazy_static::lazy_static;
 
 pub type WaveObject = bevy_wave_collapse::objects::WaveObject<FixedPoint, MeshTextureUVS, WaveData>;
 pub type WaveMesh = bevy_wave_collapse::prelude::WaveMesh<FixedPoint, MeshTextureUVS>;
 pub type RVec3 = bevy_wave_collapse::prelude::RVec3<FixedPoint>;
 pub type WaveBuilder = bevy_wave_collapse::prelude::WaveBuilder<FixedPoint, MeshTextureUVS>;
-pub type WaveData = [MapCell; 6];
+pub struct WaveData {
+    pub neighbours: [MapCell; 6],
+    pub palate: &'static HashMap<MeshTextureUVS, MeshTextureUVS>
+}
+
+lazy_static! {
+    pub static ref EMPTY_PALATE: HashMap<MeshTextureUVS, MeshTextureUVS> = HashMap::new();
+    pub static ref DEEP_PALATE: HashMap<MeshTextureUVS, MeshTextureUVS> = [(MeshTextureUVS::Water, MeshTextureUVS::DeepWater)].into_iter().collect();
+    pub static ref FRESH_PALATE: HashMap<MeshTextureUVS, MeshTextureUVS> = [(MeshTextureUVS::Water, MeshTextureUVS::FreshWater)].into_iter().collect();
+}
 
 mod islands;
 use islands::DynamicIsland;
@@ -44,6 +54,10 @@ pub enum MeshTextureUVS {
     PalmLeaf = 10,
     PalmNut = 11,
     PalmSeed = 12,
+    Red = 13,
+    Rock = 14,
+    DeepWater = 15,
+    FreshWater = 16,
 }
 
 impl bevy_wave_collapse::vertex::VertexUV for MeshTextureUVS {
@@ -70,52 +84,17 @@ impl FromWorld for IslandObjects {
                 StaticIsland::new::<1>(asset_server, "objs/water.wfo"),
             );
             data.push(obj);
+            let obj = objs.set(
+                MapCell::FreshWater.to_handle_id(),
+                StaticIsland::new::<1>(asset_server, "objs/water.wfo"),
+            );
+            data.push(obj);
+            let obj = objs.set(
+                MapCell::DeepWater.to_handle_id(),
+                StaticIsland::new::<1>(asset_server, "objs/water.wfo"),
+            );
+            data.push(obj);
         });
         IslandObjects(data)
     }
 }
-
-// fn build_map(
-//     mut commands: Commands,
-//     objs: Res<Assets<WaveObject>>,
-//     wave_mesh: Res<Assets<WaveMesh>>,
-//     mut bevy_mesh: ResMut<Assets<Mesh>>,
-// ) {
-//     let mut rng = rand::thread_rng();
-//     let sand = objs.get(&Handle::weak(MapCell::Sand.to_handle_id())).unwrap();
-//     let water = objs.get(&Handle::weak(MapCell::Water.to_handle_id())).unwrap();
-//     let mut temp_map = HashMap::new();
-//     for id in crate::map::ids::HexRangeIterator::new(2) {
-//         temp_map.insert(id, if rng.gen_bool(0.33) {MapCell::Water} else {MapCell::Sand});
-//     }
-//     temp_map.insert(CellId::new(0, 0), MapCell::Sand);
-//     for id in crate::map::ids::HexRingIterator::new(3) {
-//         temp_map.insert(id, MapCell::Water);
-//     }
-
-//     commands.spawn((Name::new("Map"), SpatialBundle::INHERITED_IDENTITY)).with_children(|commands| {
-
-//     for (id, cell) in temp_map.iter() {
-//         let neighbours = id.neighbours().map(|id| temp_map.get(&id).copied().unwrap_or(MapCell::Water));
-//         let mut mesh = WaveBuilder::new();
-//         info!("{} = {:?}", id, neighbours);
-//         if let Err(e) = match cell {
-//             MapCell::Water => {
-//                 water.build(RVec3::default(), &wave_mesh, &mut mesh, &neighbours)
-//             },
-//             MapCell::Sand => {
-//                 sand.build(RVec3::default(), &wave_mesh, &mut mesh, &neighbours)
-//             },
-//             #[allow(unreachable_patterns)]
-//             e => {error!("MapCell::{:?} does not have a wave obj", e); continue;},
-//         } {error!("{}", e)};
-//         let mesh = bevy_mesh.add(mesh.extract_mesh(bevy::render::render_resource::PrimitiveTopology::TriangleList));
-//         commands.spawn((*id, MaterialMeshBundle::<CustomMaterial> {
-//             mesh,
-//             material: Handle::weak(crate::utils::ConstHandles::WaveMaterial.into()),
-//             transform: Transform::from_translation(id.xyz(0.) * 2.),
-//             ..Default::default()
-//         }));
-//     }
-//     });
-// }

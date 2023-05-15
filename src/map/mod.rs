@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use crate::{crafting::potions::PotionEffect, inventory::SelectedSlot, plants::Plant, prelude::*};
+use crate::{crafting::potions::PotionEffect, inventory::SelectedSlot, plants::Plant, prelude::*, mesh::{WaveData, EMPTY_PALATE, DEEP_PALATE, FRESH_PALATE}};
 use bevy::{asset::HandleId, prelude::*, utils::HashSet};
 use bevy_mod_picking::PickableBundle;
 use serde::{Deserialize, Serialize};
 use uuid::uuid;
 
-use self::ids::{CellId, Hex};
+use self::ids::{CellId, Hex, WithOffset};
 
 #[derive(Resource)]
 pub struct MapData {
@@ -41,9 +41,13 @@ impl Plugin for MapPlugin {
             .register_type::<MapCell>()
             .add_system(spawn_map.in_schedule(OnExit(GameState::Loading)))
             .add_system(make_island.in_set(OnUpdate(Tool::Hand)))
-            .add_system(save_map.in_set(OnUpdate(GameState::Playing)));
+            .add_system(save_map.in_set(OnUpdate(GameState::Playing)))
+            .add_system(dynamic_update.in_schedule(CoreSchedule::FixedUpdate).run_if(resource_exists::<NeedMapUpdate>()))
+            .insert_resource(FixedTime::new_from_secs(1.));
     }
 }
+
+const MAPSIZE: u32 = 3;
 
 fn spawn_map(mut commands: Commands, pkv: Res<bevy_pkv::PkvStore>) {
     //todo add seed to map
@@ -64,7 +68,7 @@ fn spawn_map(mut commands: Commands, pkv: Res<bevy_pkv::PkvStore>) {
         }
         Err(e) => {
             error!("{:?}", e);
-            let mut new_map = ids::HexSpiralIterator::new(2)
+            let mut new_map = ids::HexSpiralIterator::new(MAPSIZE)
                 .map(|id| (id, (MapCell::Water, None)))
                 .collect::<HashMap<CellId, (MapCell, Option<Plant>)>>();
             new_map.insert(CellId::ZERO, (MapCell::Sand, Some(Plant::Palm)));
@@ -78,11 +82,16 @@ fn spawn_map(mut commands: Commands, pkv: Res<bevy_pkv::PkvStore>) {
         .id();
 
     //todo add setting for world size
-    for id in ids::HexSpiralIterator::new(2) {
+    for id in ids::HexSpiralIterator::new(MAPSIZE) {
         let (cell, plant) = if let Some(val) = old_map.get(&id) {
             *val
         } else {
             (MapCell::Water, None)
+        };
+        let cell = if id == CellId::ZERO {
+            MapCell::FreshWater
+        } else {
+            cell
         };
         let mut entity = commands.spawn((
             id,
@@ -99,6 +108,20 @@ fn spawn_map(mut commands: Commands, pkv: Res<bevy_pkv::PkvStore>) {
         }
         map.insert(id, entity.id());
     }
+    for id in ids::HexRingIterator::new(MAPSIZE + 1) {
+        let entity = commands.spawn((
+            id,
+            MapCell::DeepWater,
+            PickableBundle::default(),
+            SpatialBundle::INHERITED_IDENTITY,
+            Handle::<CustomMaterial>::weak(ConstHandles::WaveMaterial.into()),
+            Handle::<Mesh>::default(),
+            Name::new(format!("Cell {}", id)),
+        ))
+        .set_parent(root).id();
+        map.insert(id, entity);
+    }
+    
     commands.insert_resource(MapData { map });
 }
 
@@ -112,11 +135,25 @@ fn update_mesh(
 ) {
     let neighbours = id.neighbours().map(|id| {
         if let Some(entity) = map.get(&id) {
-            cells.get(entity).map(|v| *v.1).unwrap_or(MapCell::Water)
+            cells.get(entity).map(|v| *v.1).unwrap_or_default()
         } else {
-            MapCell::Water
+            MapCell::DeepWater
         }
     });
+
+    let neighbours = WaveData {
+        neighbours,
+        palate: match if let Some(entity) = map.get(&id) {
+            cells.get(entity).map(|v| *v.1).unwrap_or_default()
+        } else {
+            MapCell::DeepWater
+        } {
+            MapCell::Water |
+            MapCell::Sand => &EMPTY_PALATE,
+            MapCell::DeepWater => &DEEP_PALATE,
+            MapCell::FreshWater => &FRESH_PALATE
+        }
+    };
     let (mut mesh, cell_type) = if let Some(entity) = map.get(&id) {
         match cells.get_mut(entity) {
             Ok(v) => v,
@@ -185,9 +222,11 @@ fn update_cell_transform(
 )]
 #[reflect(Component)]
 pub enum MapCell {
-    #[default]
     Water,
     Sand,
+    #[default]
+    DeepWater,
+    FreshWater,
 }
 
 impl MapCell {
@@ -221,11 +260,25 @@ impl MapCell {
                 y: 0.2,
                 z: 0.0,
             },
+            MapCell::FreshWater => Vec3 {
+                x: 0.,
+                y: 0.1,
+                z: 0.0,
+            },
+            MapCell::DeepWater => Vec3 {
+                x: 0.,
+                y: 0.1,
+                z: 0.0,
+            },
         }
     }
 }
 
+#[derive(Resource)]
+pub struct NeedMapUpdate;
+
 fn make_island(
+    mut commands: Commands,
     current: Query<(&Item, &Slot), With<SelectedSlot>>,
     mut click_cell: Query<(&mut MapCell, &Interaction), Changed<Interaction>>,
     mut events: EventWriter<InventoryEvent>,
@@ -244,11 +297,13 @@ fn make_island(
         if potion.contains(&PotionEffect::TidalWave) && *cell != MapCell::Water {
             *cell = MapCell::Water;
             events.send(InventoryEvent::RemoveItem(*slot));
+            commands.insert_resource(NeedMapUpdate);
             return;
         };
         if potion.contains(&PotionEffect::IslandOasis) && *cell != MapCell::Sand {
             *cell = MapCell::Sand;
             events.send(InventoryEvent::RemoveItem(*slot));
+            commands.insert_resource(NeedMapUpdate);
             return;
         };
         msgs.send(PlayerMessage::warn(
@@ -270,6 +325,7 @@ fn save_map(
     }
     let mut new_map = HashMap::new();
     for (id, entity) in map.map.iter() {
+        if id.distance(CellId::ZERO) > MAPSIZE {continue;}
         if let Ok(cell) = query.get(*entity) {
             new_map.insert(*id, (*cell.0, cell.1.cloned()));
         }
@@ -277,6 +333,53 @@ fn save_map(
     if let Err(e) = pkv.set("Map", &new_map) {
         error!("{:?}", e);
     };
+}
+
+fn dynamic_update(
+    mut commands: Commands,
+    map: Res<MapData>,
+    mut real: Query<(Entity, &mut MapCell, &CellId)>,
+) {
+    let mut set_water = Vec::new();
+    let mut set_fresh = Vec::new();
+    'next: for (entity, cell, id) in &real {
+        match cell {
+            MapCell::Sand |
+            MapCell::DeepWater => continue,
+            MapCell::Water |
+            MapCell::FreshWater => {
+                for ring in 1..=MAPSIZE*2 + 1 {
+                    let mut found_out = false;
+                    for around in ids::HexRingIterator::new(ring).with_offset(*id) {
+                        if let Some(other) = map.get(&around) {
+                            let Ok((_, other, _)) = real.get(other) else {error!("Cell in map need to have vaild enity {:?}", other); continue;};
+                            match other {
+                                MapCell::FreshWater |
+                                MapCell::Water => found_out = true,
+                                MapCell::Sand => {},
+                                MapCell::DeepWater => {set_water.push(entity); continue 'next;},
+                            }
+                        }
+                    }
+                    if !found_out {
+                        set_fresh.push(entity);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    for water in set_water {
+        if let Ok((_, mut cell, _)) = real.get_mut(water) {
+            *cell = MapCell::Water;
+        }
+    }
+    for fresh in set_fresh {
+        if let Ok((_, mut cell, _)) = real.get_mut(fresh) {
+            *cell = MapCell::FreshWater;
+        }
+    }
+    commands.remove_resource::<NeedMapUpdate>();
 }
 
 struct SaveTime(Timer);

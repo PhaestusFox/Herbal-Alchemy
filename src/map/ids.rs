@@ -291,6 +291,14 @@ impl CellId {
         let x = (self.q as f32 * 0.5 + self.r as f32) * SQRT_3DIV2;
         Vec3::new(x, y, z)
     }
+
+    #[inline]
+    pub fn distance(&self, othor: CellId) -> u32 {
+        let res =
+            ((self.q - othor.q).abs() + (self.r - othor.r).abs() + (self.s() - othor.s()).abs())
+                / 2;
+        res as u32
+    }
 }
 
 impl std::fmt::Display for CellId {

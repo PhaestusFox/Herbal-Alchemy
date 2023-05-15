@@ -73,6 +73,7 @@ indexmap = "*"
 belly = {git = "https://github.com/jkb0o/belly.git"}
 bitflags = "*"
 iyes_progress = "*"
+lazy_static = "*"
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.28", default-features = false }

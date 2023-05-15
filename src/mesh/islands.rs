@@ -54,9 +54,11 @@ impl DynamicIsland {
         )?;
         let mut is_water = [true; 6];
         for i in 0..6 {
-            is_water[i] = match neighbors[i] {
+            is_water[i] = match neighbors.neighbours[i] {
                 MapCell::Water => true,
                 MapCell::Sand => false,
+                MapCell::FreshWater => true,
+                MapCell::DeepWater => true,
             }
         }
         for i in 0..6 {
@@ -80,7 +82,14 @@ impl DynamicIsland {
                 .clone();
             let cos = FixedPoint::ROTATIONS_COS[i];
             let sin = FixedPoint::ROTATIONS_SIN[i];
+            let palate: &HashMap<MeshTextureUVS, MeshTextureUVS> = match neighbors.neighbours[(6 - i) % 6] {
+                MapCell::Water |
+                MapCell::DeepWater |
+                MapCell::Sand => &EMPTY_PALATE,
+                MapCell::FreshWater => &FRESH_PALATE,
+            };
             stright.rotate(sin, cos);
+            stright.apply_palate(palate);
             main_mesh.bake(offset, &stright)?;
             let corner = match (is_water[(6 - i) % 6], is_water[(5 - i) % 6]) {
                 (true, true) => obj.get(ConnectWaterWater).ok_or(BakeError::MeshNotSet {
@@ -100,6 +109,11 @@ impl DynamicIsland {
                     obj: NAMES[NAME],
                 })?,
             };
+            let palate: &HashMap<MeshTextureUVS, MeshTextureUVS> = match (neighbors.neighbours[(6 - i) % 6], neighbors.neighbours[(5 - i) % 6]) {
+                (MapCell::FreshWater, _) |
+                (_, MapCell::FreshWater) => &FRESH_PALATE,
+                _ => &EMPTY_PALATE,
+            };
             let mut corner = assets
                 .get(corner)
                 .ok_or(BakeError::MeshNotFound {
@@ -110,6 +124,7 @@ impl DynamicIsland {
             let cos = FixedPoint::ROTATIONS_COS[i];
             let sin = FixedPoint::ROTATIONS_SIN[i];
             corner.rotate(sin, cos);
+            corner.apply_palate(palate);
             main_mesh.bake(offset, &corner)?;
         }
         Ok(())
@@ -145,11 +160,9 @@ impl StaticIsland {
         offset: RVec3,
         assets: &Assets<WaveMesh>,
         main_mesh: &mut WaveBuilder,
-        _: &WaveData,
+        data: &WaveData,
     ) -> Result<(), BakeError> {
-        main_mesh.bake(
-            offset,
-            assets
+        let mut mesh = assets
                 .get(obj.get(IslandComponet::Core).ok_or(BakeError::MeshNotSet {
                     mesh: "Core",
                     obj: NAMES[NAME],
@@ -157,7 +170,11 @@ impl StaticIsland {
                 .ok_or(BakeError::MeshNotFound {
                     mesh: "Core",
                     obj: NAMES[NAME],
-                })?,
+                })?.clone();
+        mesh.apply_palate(data.palate);
+        main_mesh.bake(
+            offset,
+            &mesh,
         )
     }
 }
