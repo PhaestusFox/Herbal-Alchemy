@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use bevy::prelude::*;
-use std::collections::HashSet as HashSet;
 use rand::{seq::IteratorRandom, Rng};
+use std::collections::HashSet;
 use std::fmt::Display;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -40,28 +40,37 @@ impl PotionEffect {
             _ => {}
         }
         // conflicting bits are bad
-        if val.in_group(crate::crafting::tags::TagGroups::Elemental).count() > 3
+        if val
+            .in_group(crate::crafting::tags::TagGroups::Elemental)
+            .count()
+            > 3
         {
             effects.push(Nausea)
         }
-        if !val.has_all([TagNames::Life, TagNames::Tropical]) { //add 
-            match (val.has_tag(TagNames::Fire), val.has_tag(TagNames::Air), val.has_tag(TagNames::Water), val.has_tag(TagNames::Earth)) {
-                (true, true, true  , true) => effects.push(InfernoBlizzard),
-                (true, true, false , false) => effects.push(FireStorm),
-                (false, true, true , false) => effects.push(IceStorm),
-                (true, false, true , false) => effects.push(EmberFrost),
+        if !val.has_all([TagNames::Life, TagNames::Tropical]) {
+            //add
+            match (
+                val.has_tag(TagNames::Fire),
+                val.has_tag(TagNames::Air),
+                val.has_tag(TagNames::Water),
+                val.has_tag(TagNames::Earth),
+            ) {
+                (true, true, true, true) => effects.push(InfernoBlizzard),
+                (true, true, false, false) => effects.push(FireStorm),
+                (false, true, true, false) => effects.push(IceStorm),
+                (true, false, true, false) => effects.push(EmberFrost),
                 (true, false, false, true) => effects.push(FireBall),
                 (false, false, true, true) => effects.push(SnowBall),
                 (true, true, true, false) => effects.push(FrostFire),
                 (true, false, true, true) => effects.push(Explosion),
                 (false, true, true, true) => effects.push(Blizzard),
-                (true, true, false, true) => effects.push(Sandstorm),// todo!(add fire, air, earth effect)
-                (false, true, false, true) |
-                (true, false, false, false) |
-                (false, false, false, true) |
-                (false, true, false, false) |
-                (false, false, true, false) |
-                (false, false, false, false) => {}
+                (true, true, false, true) => effects.push(Sandstorm), // todo!(add fire, air, earth effect)
+                (false, true, false, true)
+                | (true, false, false, false)
+                | (false, false, false, true)
+                | (false, true, false, false)
+                | (false, false, true, false)
+                | (false, false, false, false) => {}
             }
         }
         if val.has_all([TagNames::Water, TagNames::Time]) {
@@ -70,22 +79,34 @@ impl PotionEffect {
         if val.has_all([TagNames::Air, TagNames::Fire]) {
             effects.push(Invisibility)
         }
-        if val.has_all([TagNames::Life, TagNames::Fibrous]) && !val.has_all([TagNames::Earth, TagNames::Water]) {
+        if val.has_all([TagNames::Life, TagNames::Fibrous])
+            && !val.has_all([TagNames::Earth, TagNames::Water])
+        {
             effects.push(Strength)
         }
-        if !val.has_tag(TagNames::Earth) && val.in_group(crate::crafting::tags::TagGroups::Light).count() > 0 {
+        if !val.has_tag(TagNames::Earth)
+            && val
+                .in_group(crate::crafting::tags::TagGroups::Light)
+                .count()
+                > 0
+        {
             effects.push(Levitation)
         }
         if val.has_all([TagNames::Time, TagNames::Life]) && !val.has_tag(TagNames::Tropical) {
             effects.push(Confusion)
         }
-        if val.has_all([TagNames::Life, TagNames::Earth, TagNames::Fire]) && !val.has_tag(TagNames::Time) {
+        if val.has_all([TagNames::Life, TagNames::Earth, TagNames::Fire])
+            && !val.has_tag(TagNames::Time)
+        {
             effects.push(Inflammation)
         }
-        if val.has_any([TagNames::Air, TagNames::Fire]) && val.has_tag(TagNames::Tropical) && !val.has_tag(TagNames::Time) {
+        if val.has_any([TagNames::Air, TagNames::Fire])
+            && val.has_tag(TagNames::Tropical)
+            && !val.has_tag(TagNames::Time)
+        {
             effects.push(Teleportation)
         }
-        if val.has_tag(TagNames::Earth) && !val.has_tag(TagNames::Water){
+        if val.has_tag(TagNames::Earth) && !val.has_tag(TagNames::Water) {
             effects.push(IslandOasis)
         }
         if val.has_tag(TagNames::Water) && !val.has_tag(TagNames::Earth) {
@@ -95,7 +116,17 @@ impl PotionEffect {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, strum_macros::EnumIter, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    strum_macros::EnumIter,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub enum PotionEffect {
     InstantDeath,
     Explosion,
@@ -125,7 +156,8 @@ pub enum PotionEffect {
     IslandOasis,
     TidalWave,
     // Desert Mirage
-    Sandstorm
+    Sandstorm,
+    Calcification,
 }
 
 impl Display for PotionEffect {
@@ -157,7 +189,8 @@ impl Display for PotionEffect {
             IslandOasis => f.write_str("Earth && !Water"),
             TidalWave => f.write_str("Water && !Earth"),
             EmberFrost => f.write_str("Fire && Water"),
-            Sandstorm => f.write_str("Earth && Air && Fire")
+            Sandstorm => f.write_str("Earth && Air && Fire"),
+            Calcification => f.write_str(""),
         }?;
         f.write_str(")")
     }
@@ -239,9 +272,7 @@ impl PotionEffect {
                 EffectTags::Weather,
                 EffectTags::Slow,
             ],
-            FrostFire => {
-                &[EffectTags::AreaOfEffect, EffectTags::Ice, EffectTags::Fire]
-            }
+            FrostFire => &[EffectTags::AreaOfEffect, EffectTags::Ice, EffectTags::Fire],
             InfernoBlizzard => &[
                 EffectTags::AreaOfEffect,
                 EffectTags::Fire,
@@ -298,8 +329,22 @@ impl PotionEffect {
                 EffectTags::AreaOfEffect,
                 EffectTags::Projectile,
             ],
-            EmberFrost => &[EffectTags::Fire, EffectTags::Ice, EffectTags::DamageOverTime, EffectTags::Destructive, EffectTags::AreaOfEffect, EffectTags::Projectile],
-            Sandstorm => &[EffectTags::Destructive, EffectTags::AreaOfEffect, EffectTags::Slow, EffectTags::Weather, EffectTags::Negative],
+            EmberFrost => &[
+                EffectTags::Fire,
+                EffectTags::Ice,
+                EffectTags::DamageOverTime,
+                EffectTags::Destructive,
+                EffectTags::AreaOfEffect,
+                EffectTags::Projectile,
+            ],
+            Sandstorm => &[
+                EffectTags::Destructive,
+                EffectTags::AreaOfEffect,
+                EffectTags::Slow,
+                EffectTags::Weather,
+                EffectTags::Negative,
+            ],
+            Calcification => &[],
         }
     }
 
@@ -702,7 +747,7 @@ impl PotionEffect {
             ],
             EmberFrost => &[],
             Sandstorm => &[],
-            
+            Calcification => &[],
         }
     }
 
@@ -822,16 +867,20 @@ impl TargetPotion {
         }
         match &self.extra {
             None => Ok(()),
-            Some(Rule::Effect(effect)) => if effects.contains(effect) {
-                Ok(())
-            } else {
-                Err("Id Doesnt Have the added Effect".into())
-            },
-            Some(Rule::NotEffect(effect)) => if effects.contains(effect) {
-                Err("Id Have an unwanted Effect".into())
-            } else {
-                Ok(())
-            },
+            Some(Rule::Effect(effect)) => {
+                if effects.contains(effect) {
+                    Ok(())
+                } else {
+                    Err("Id Doesnt Have the added Effect".into())
+                }
+            }
+            Some(Rule::NotEffect(effect)) => {
+                if effects.contains(effect) {
+                    Err("Id Have an unwanted Effect".into())
+                } else {
+                    Ok(())
+                }
+            }
             Some(Rule::Tag(tag)) => {
                 let mut tags = HashSet::new();
                 for effect in effects {

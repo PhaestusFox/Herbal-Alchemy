@@ -35,9 +35,7 @@ impl PalmTree {
     }
     pub fn tool_tip_text(part: PlantPart) -> String {
         match part {
-            PlantPart::Seed => format!(
-                "A coconut thats still green; Maybe You Could Plant it ;P:"
-            ),
+            PlantPart::Seed => format!("A coconut thats still green; Maybe You Could Plant it ;P:"),
             PlantPart::Leaf => format!("A Palm Fron:"),
             PlantPart::Root => format!("A Coconut Root:"),
             PlantPart::Stem => format!("A Log of a Palm Tree:"),

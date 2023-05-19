@@ -18,10 +18,7 @@ use islands::DynamicIsland;
 use self::islands::StaticIsland;
 pub struct MeshPlugin;
 
-const NAMES: [&'static str; 2] = [
-    "Sand",
-    "Water",
-];
+const NAMES: [&'static str; 2] = ["Sand", "Water"];
 
 impl Plugin for MeshPlugin {
     fn build(&self, app: &mut App) {

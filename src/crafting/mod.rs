@@ -1,10 +1,13 @@
-use crate::{inventory::{SelectedSlot, Inventory}, prelude::*};
+use crate::{
+    inventory::{Inventory, SelectedSlot},
+    prelude::*,
+};
 use bevy::prelude::*;
 use bevy_console::{reply, reply_failed, AddConsoleCommand, ConsoleCommand};
 use clap::{Parser, ValueEnum};
 use strum::IntoEnumIterator;
-use thiserror::Error;
 use tags::TagGroups;
+use thiserror::Error;
 
 use self::tags::TagNames;
 
@@ -55,7 +58,7 @@ fn process_command(
                 for item in items {
                     events.send(InventoryEvent::AddItem(item));
                 }
-            },
+            }
             Err(e) => reply_failed!(log, "{e}"),
         }
     }
@@ -160,23 +163,32 @@ impl Item {
         }
         let val = match self {
             Item::Empty => return Err(CraftingError::NoItem),
-            Item::Potion(tags) => {tags},
+            Item::Potion(tags) => tags,
             Item::Ingredient(plant, part) => plant.get_tags() | part.get_tags(),
-            Item::Intimidate(tags) => {
-                tags
-            }
+            Item::Intimidate(tags) => tags,
         };
         Ok(match process {
             Process::Test => unreachable!(),
-            Process::Distill => vec![val.in_group(TagGroups::Volatile), val.not_in_group(TagGroups::Volatile)],
-            Process::Condense => vec![val.in_group(TagGroups::Heavy), val.not_in_group(TagGroups::Heavy)],
+            Process::Distill => vec![
+                val.in_group(TagGroups::Volatile),
+                val.not_in_group(TagGroups::Volatile),
+            ],
+            Process::Condense => vec![
+                val.in_group(TagGroups::Heavy),
+                val.not_in_group(TagGroups::Heavy),
+            ],
             Process::Boil => vec![val.not_in_group(TagGroups::Cold).with_tag(TagNames::Water)],
             Process::Freeze => vec![val.not_in_group(TagGroups::Hot)],
             Process::Age => vec![val.in_group(TagGroups::Stable)],
-            Process::Burn => vec![val.not_in_group(TagGroups::Volatile).with_tag(TagNames::Fire)],
+            Process::Burn => vec![val
+                .not_in_group(TagGroups::Volatile)
+                .with_tag(TagNames::Fire)],
             Process::Spin => vec![val.not_in_group(TagGroups::Light)],
             Process::Steam => vec![val.not_in_group(TagGroups::Elemental)],
-        }.into_iter().map(|v| Item::Intimidate(v)).collect())
+        }
+        .into_iter()
+        .map(|v| Item::Intimidate(v))
+        .collect())
     }
 }
 
@@ -195,7 +207,7 @@ fn missing_vals() {
         Item::Ingredient(crate::plants::Plant::Palm, PlantPart::Bark),
         Item::Ingredient(crate::plants::Plant::Palm, PlantPart::Fruit),
         Item::Potion(Tags(255)),
-        ];
+    ];
     // let mut test = Item::Potion(Tags(255));
     // println!("test has tags {:?}", test.get_tags().get_tag_names());
     // test.apply_process(Process::Distill).unwrap();
@@ -214,20 +226,22 @@ fn missing_vals() {
         }
         for ingredient in PARTS {
             let next = potion | ingredient.get_tags();
-            if next == potion {continue;}
+            if next == potion {
+                continue;
+            }
             add_all_process(next, depth - 1, all, found);
             for process in Process::iter() {
                 let ingredient = ingredient;
                 match ingredient.apply_process(process) {
                     Err(e) => match e {
-                        CraftingError::NoItem |
-                        CraftingError::Bug => println!("{e}"),
-                        CraftingError::Potion |
-                        CraftingError::DuplicateProcess(_) => {},
+                        CraftingError::NoItem | CraftingError::Bug => println!("{e}"),
+                        CraftingError::Potion | CraftingError::DuplicateProcess(_) => {}
                     },
                     Ok(parts) => {
                         for part in parts {
-                            if part == ingredient {continue;}
+                            if part == ingredient {
+                                continue;
+                            }
                             add_all_process(potion | part.get_tags(), depth - 1, all, found);
                         }
                     }
@@ -241,14 +255,19 @@ fn missing_vals() {
         add_all_process(Tags(potion), 2, &mut all, &mut new_found)
     }
     let mut all_effects = PotionEffect::iter().collect::<std::collections::HashSet<PotionEffect>>();
-    let potions = ron::from_str::<std::collections::HashMap<u8, std::collections::HashSet<PotionEffect>>>(&std::fs::read_to_string("potion.effects").unwrap()).unwrap();
+    let potions = ron::from_str::<
+        std::collections::HashMap<u8, std::collections::HashSet<PotionEffect>>,
+    >(&std::fs::read_to_string("potion.effects").unwrap())
+    .unwrap();
     for potion in 0..=255 {
-        if all.contains(&potion) {continue;}
+        if all.contains(&potion) {
+            continue;
+        }
         for effects in potions.get(&potion).unwrap() {
             all_effects.remove(effects);
         }
     }
-    println!("Need ({}) {:?}",all.len(), all);
+    println!("Need ({}) {:?}", all.len(), all);
     println!("Can't Get {:?}", all_effects);
 }
 
@@ -338,7 +357,6 @@ fn dice(val: u8) -> u8 {
 //     Taste,
 // }
 
-
 #[derive(
     Debug, strum_macros::EnumIter, Clone, Copy, PartialEq, strum_macros::EnumString, ValueEnum,
 )]
@@ -348,17 +366,17 @@ pub enum Process {
     /// Collect Volatile Tags
     Distill = 1,
     /// Collect Heavy Tags
-    Condense = 1<<1,
+    Condense = 1 << 1,
     /// Removes Cold Tags
-    Boil = 1<<2,
+    Boil = 1 << 2,
     /// Removes Hot Tags
-    Freeze = 1<<3,
+    Freeze = 1 << 3,
     /// Removes Unstable Tags
-    Age = 1<<4,
+    Age = 1 << 4,
     /// Removes Volatile Tags add Fire
-    Burn = 1<<5,
+    Burn = 1 << 5,
     // Removes Heavy Tags
-    Spin = 1<<6,
+    Spin = 1 << 6,
     /// Remove Elemental
     Steam,
 }

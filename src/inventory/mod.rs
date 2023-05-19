@@ -225,7 +225,9 @@ impl Item {
         match self {
             Item::Empty => return Err(CraftingError::NoItem),
             Item::Potion(_) => {}
-            Item::Ingredient(plant, part) => *self = Item::Potion(plant.get_tags() | part.get_tags()),
+            Item::Ingredient(plant, part) => {
+                *self = Item::Potion(plant.get_tags() | part.get_tags())
+            }
             Item::Intimidate(part) => *self = Item::Potion(*part),
         }
         let Item::Potion(val) = self else {return Err(CraftingError::Bug);};
@@ -299,7 +301,7 @@ impl Item {
                 let mut str = plant.tool_tip_text(*part);
                 str.push_str(&format!("{:?}", self.get_tags()));
                 str
-            },
+            }
             Item::Intimidate(id) => {
                 format!(
                     "Someting you cooked up in the Lab: {:?}\n",
@@ -498,7 +500,7 @@ fn item_events(
                 if let Some(old) = new {
                     inventory.0.insert(*from, old);
                 }
-            },
+            }
             InventoryEvent::InsertItem(item, slot) => {
                 inventory.insert_item(*slot, *item);
             }

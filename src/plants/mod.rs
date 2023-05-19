@@ -1,6 +1,6 @@
-use crate::{inventory::SelectedSlot, crafting::tags::TagNames};
 use crate::map::MapCell;
 use crate::prelude::*;
+use crate::{crafting::tags::TagNames, inventory::SelectedSlot};
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use serde::{Deserialize, Serialize};
 mod palm;
@@ -48,7 +48,7 @@ pub enum Plant {
 impl Ingredient for Plant {
     fn get_tags(&self) -> Tags {
         match self {
-            Plant::Palm => Tags::new([TagNames::Tropical])
+            Plant::Palm => Tags::new([TagNames::Tropical]),
         }
     }
 }
