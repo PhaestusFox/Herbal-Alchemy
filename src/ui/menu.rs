@@ -65,10 +65,15 @@ pub(super) fn detect_change(
     tool: Res<State<Tool>>,
     mut tabs: Query<&mut BtnGroup, (With<Tab>, Without<Tool>)>,
     mut tools: Query<&mut BtnGroup, (With<Tool>, Without<Tab>)>,
+    current_state: Res<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     if tab.is_changed() {
         if let Ok(mut btn) = tabs.get_single_mut() {
             btn.value = format!("{:?}", tab.0);
+        }
+        if tab.0 != Tab::Menu && current_state.0 != GameState::Playing {
+            next_state.set(GameState::Playing);
         }
     }
     if tool.is_changed() {
