@@ -19,24 +19,27 @@ pub trait Hex: Copy + Sized + std::ops::Add<Self, Output = Self> {
     }
     #[inline(always)]
     fn neighbour(&self, neighbour: HexNeighbour) -> Self {
-        match neighbour {
-            HexNeighbour::One => Self::new(self.q() + 1, self.r() - 1),
-            HexNeighbour::Two => Self::new(self.q() + 1, self.r()),
-            HexNeighbour::Three => Self::new(self.q(), self.r() + 1),
-            HexNeighbour::For => Self::new(self.q() - 1, self.r() + 1),
-            HexNeighbour::Five => Self::new(self.q() - 1, self.r()),
-            HexNeighbour::Six => Self::new(self.q(), self.r() - 1),
-        }
+        use HexNeighbour::*;
+        let (dq, dr) = match neighbour {
+            One => (1, -1),
+            Two => (1, 0),
+            Three => (0, 1),
+            Four => (-1, 1),
+            Five => (-1, 0),
+            Six => (0, -1),
+        };
+        Self::new(self.q() + dq, self.r() + dr)
     }
+
     #[inline(always)]
     fn neighbours(&self) -> [Self; 6] {
         [
-            Self::new(self.q() + 1, self.r() - 1),
-            Self::new(self.q() + 1, self.r()),
-            Self::new(self.q(), self.r() + 1),
-            Self::new(self.q() - 1, self.r() + 1),
-            Self::new(self.q() - 1, self.r()),
-            Self::new(self.q(), self.r() - 1),
+            self.neighbour(HexNeighbour::One),
+            self.neighbour(HexNeighbour::Two),
+            self.neighbour(HexNeighbour::Three),
+            self.neighbour(HexNeighbour::Four),
+            self.neighbour(HexNeighbour::Five),
+            self.neighbour(HexNeighbour::Six),
         ]
     }
 }
@@ -100,7 +103,7 @@ impl HexRingIterator {
                     HexNeighbour::One,
                     HexNeighbour::Two,
                     HexNeighbour::Three,
-                    HexNeighbour::For,
+                    HexNeighbour::Four,
                     HexNeighbour::Five,
                     HexNeighbour::Six,
                 ]
@@ -193,7 +196,7 @@ mod consts {
     pub const ONE_AND_ONETHIRED: f32 = 1. / 0.75;
     pub const ONETHIRD: f32 = 1. / 3.;
     pub const TWOTHIRD: f32 = 2. / 3.;
-    pub const HEXROT: f32 = 0.523599 * 2.0;
+    pub const HEXROT: f32 = core::f32::consts::FRAC_PI_3;
 }
 
 #[derive(Debug, Component, Reflect, Default, PartialEq, Eq, Clone, Copy)]

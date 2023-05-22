@@ -1,11 +1,19 @@
-use crate::{inventory::SelectedSlot, prelude::*};
+use crate::{
+    inventory::{Inventory, SelectedSlot},
+    prelude::*,
+};
 use bevy::prelude::*;
 use bevy_console::{reply, reply_failed, AddConsoleCommand, ConsoleCommand};
 use clap::{Parser, ValueEnum};
 use strum::IntoEnumIterator;
+use tags::TagGroups;
 use thiserror::Error;
 
+use self::tags::TagNames;
+
 pub mod potions;
+
+pub mod tags;
 
 pub struct CraftingPlugin;
 
@@ -28,28 +36,31 @@ struct LabCommand {
 
 fn process_command(
     mut log: ConsoleCommand<LabCommand>,
-    mut item: Query<&mut Item, With<SelectedSlot>>,
+    item: Query<(&Item, &Slot), With<SelectedSlot>>,
+    mut events: EventWriter<InventoryEvent>,
+    mut inventory: ResMut<Inventory>,
 ) {
     if let Some(Ok(LabCommand { process })) = log.take() {
-        let Ok(mut item) = item.get_single_mut() else {
+        let Ok((item, slot)) = item.get_single() else {
             reply_failed!(log, "No Item Selected; Click an item to select it.");
             return;
         };
-        let old = *item;
-        if let Process::Taste = process {
+        if let Process::Test = process {
             let taste = item.taste();
             reply!(log, "{taste}");
             return;
         }
-        if let Err(e) = item.apply_process(process) {
-            reply_failed!(log, "{e}")
-        } else {
-            if let Item::Intimidate(id, _) = *item {
-                reply!(log, "{old:?} -> {:08b}", id);
-            } else {
-                reply!(log, "this is a bug; please report how you did it");
+        match item.apply_process(process) {
+            Ok(mut items) => {
+                if let Some(item) = items.pop() {
+                    events.send(InventoryEvent::InsertItem(item, *slot));
+                }
+                for item in items {
+                    events.send(InventoryEvent::AddItem(item));
+                }
             }
-        };
+            Err(e) => reply_failed!(log, "{e}"),
+        }
     }
 }
 
@@ -92,7 +103,7 @@ fn brew_potion(
                 events.send(InventoryEvent::RemoveItem(*slot));
             }
         }
-        PotionAcction::Empty => potion.0 = Item::Potion(0),
+        PotionAcction::Empty => potion.0 = Item::Potion(Tags::EMPTY),
         PotionAcction::Taste => {
             let taste = potion.0.taste();
             reply!(log, "{taste}");
@@ -107,114 +118,157 @@ pub enum CraftingError {
     #[error("Potion Selected, you cant cook that ;P")]
     Potion,
     #[error("This has allready been done to this item")]
-    DuplicateProcess(u8),
+    DuplicateProcess(Process),
     #[error("This is a bug please report how you got this message")]
     Bug,
 }
 
 impl Item {
-    fn apply_process(&mut self, process: Process) -> Result<(), CraftingError> {
-        if let Process::Taste = process {
-            return Ok(());
+    // fn apply_process(&mut self, process: Process) -> Result<(), CraftingError> {
+    //     if let Process::Taste = process {
+    //         return Ok(());
+    //     }
+    //     match self {
+    //         Item::Empty => return Err(CraftingError::NoItem),
+    //         Item::Potion(_) => return Err(CraftingError::Potion),
+    //         Item::Ingredient(_, part) => *self = Item::Intimidate(*part as u8, u8::from(process)),
+    //         Item::Intimidate(_, done) => {
+    //             if *done & u8::from(process) > 0 {
+    //                 return Err(CraftingError::DuplicateProcess(u8::from(process)));
+    //             } else {
+    //                 *done |= u8::from(process);
+    //             }
+    //         }
+    //     };
+    //     let Item::Intimidate(val, _) = self else {return Err(CraftingError::Bug);};
+    //     *val = match process {
+    //         Process::SpinLeft => spin_left(*val),
+    //         Process::SpinRight => spin_right(*val),
+    //         Process::Freeze => freeze(*val),
+    //         Process::Burn => burn(*val),
+    //         Process::Chop => chop(*val),
+    //         Process::Grind => grind(*val),
+    //         Process::Shake => shake(*val),
+    //         Process::Blend => blend(*val),
+    //         Process::Mix => mix(*val),
+    //         Process::Dice => dice(*val),
+    //         Process::Taste => *val,
+    //     };
+    //     Ok(())
+    // }
+
+    fn apply_process(self, process: Process) -> Result<Vec<Item>, CraftingError> {
+        if let Process::Test = process {
+            return Ok(vec![self]);
         }
-        match self {
+        let val = match self {
             Item::Empty => return Err(CraftingError::NoItem),
-            Item::Potion(_) => return Err(CraftingError::Potion),
-            Item::Ingredient(_, part) => *self = Item::Intimidate(*part as u8, u8::from(process)),
-            Item::Intimidate(_, done) => {
-                if *done & u8::from(process) > 0 {
-                    return Err(CraftingError::DuplicateProcess(u8::from(process)));
-                } else {
-                    *done |= u8::from(process);
-                }
-            }
+            Item::Potion(tags) => tags,
+            Item::Ingredient(plant, part) => plant.get_tags() | part.get_tags(),
+            Item::Intimidate(tags) => tags,
         };
-        let Item::Intimidate(val, _) = self else {return Err(CraftingError::Bug);};
-        *val = match process {
-            Process::SpinLeft => spin_left(*val),
-            Process::SpinRight => spin_right(*val),
-            Process::Freeze => freeze(*val),
-            Process::Burn => burn(*val),
-            Process::Chop => chop(*val),
-            Process::Grind => grind(*val),
-            Process::Shake => shake(*val),
-            Process::Blend => blend(*val),
-            Process::Mix => mix(*val),
-            Process::Dice => dice(*val),
-            Process::Taste => *val,
-        };
-        Ok(())
+        Ok(match process {
+            Process::Test => unreachable!(),
+            Process::Distill => vec![
+                val.in_group(TagGroups::Volatile),
+                val.not_in_group(TagGroups::Volatile),
+            ],
+            Process::Condense => vec![
+                val.in_group(TagGroups::Heavy),
+                val.not_in_group(TagGroups::Heavy),
+            ],
+            Process::Boil => vec![val.not_in_group(TagGroups::Cold).with_tag(TagNames::Water)],
+            Process::Freeze => vec![val.not_in_group(TagGroups::Hot)],
+            Process::Age => vec![val.in_group(TagGroups::Stable)],
+            Process::Burn => vec![val
+                .not_in_group(TagGroups::Volatile)
+                .with_tag(TagNames::Fire)],
+            Process::Spin => vec![val.not_in_group(TagGroups::Light)],
+            Process::Steam => vec![val.not_in_group(TagGroups::Elemental)],
+        }
+        .into_iter()
+        .map(|v| Item::Intimidate(v))
+        .collect())
     }
 }
 
 #[test]
 fn missing_vals() {
+    use crate::inventory::Ingredient;
     use crate::plants::PlantPart;
-    use std::collections::HashSet;
-    let mut all = (0..=255).collect::<HashSet<u8>>();
-    const PARTS: [Item; 6] = [
+    use indexmap::IndexSet;
+    let mut all = (0..=255).collect::<IndexSet<u8>>();
+    let mut found = IndexSet::new();
+    const PARTS: [Item; 7] = [
         Item::Ingredient(crate::plants::Plant::Palm, PlantPart::Leaf),
         Item::Ingredient(crate::plants::Plant::Palm, PlantPart::Seed),
         Item::Ingredient(crate::plants::Plant::Palm, PlantPart::Root),
         Item::Ingredient(crate::plants::Plant::Palm, PlantPart::Stem),
         Item::Ingredient(crate::plants::Plant::Palm, PlantPart::Bark),
         Item::Ingredient(crate::plants::Plant::Palm, PlantPart::Fruit),
+        Item::Potion(Tags(255)),
     ];
+    // let mut test = Item::Potion(Tags(255));
+    // println!("test has tags {:?}", test.get_tags().get_tag_names());
+    // test.apply_process(Process::Distill).unwrap();
+    // println!("test has tags {:?}", test.get_tags().get_tag_names());
+    // test.apply_process(Process::Steam).unwrap();
+    // println!("test has tags {:?}", test.get_tags().get_tag_names());
+    // test.apply_process(Process::Freeze).unwrap();
+    // println!("test has tags {:?}", test.get_tags().get_tag_names());
     // const nut_bark: u8 = 0b00010010;
     // const wood_bark: u8 = 0b00010100;
-    fn test_all(process_test: Item, depth: u8, all: &mut HashSet<u8>) {
-        for process in <Process as strum::IntoEnumIterator>::iter() {
-            let mut new_process_test = process_test;
-            let res = new_process_test.apply_process(process);
-            if depth == 0 {
-                if res.is_ok() {
-                    all.remove(&new_process_test.brew(Item::Potion(0)).unwrap());
-                    for mut part in PARTS {
-                        all.remove(&part.brew(new_process_test).unwrap());
-                        for part_2 in PARTS {
-                            let mut part = part;
-                            all.remove(&part.brew(part_2).unwrap());
-                            for part_3 in PARTS {
-                                let mut part = part;
-                                all.remove(&part.brew(part_3).unwrap());
+    fn add_all_process(potion: Tags, depth: i32, all: &mut IndexSet<u8>, found: &mut IndexSet<u8>) {
+        all.remove(&potion.0);
+        found.insert(potion.0);
+        if depth == 0 {
+            return;
+        }
+        for ingredient in PARTS {
+            let next = potion | ingredient.get_tags();
+            if next == potion {
+                continue;
+            }
+            add_all_process(next, depth - 1, all, found);
+            for process in Process::iter() {
+                let ingredient = ingredient;
+                match ingredient.apply_process(process) {
+                    Err(e) => match e {
+                        CraftingError::NoItem | CraftingError::Bug => println!("{e}"),
+                        CraftingError::Potion | CraftingError::DuplicateProcess(_) => {}
+                    },
+                    Ok(parts) => {
+                        for part in parts {
+                            if part == ingredient {
+                                continue;
                             }
+                            add_all_process(potion | part.get_tags(), depth - 1, all, found);
                         }
                     }
-                } else {
-                    match res.unwrap_err() {
-                        CraftingError::NoItem | CraftingError::Potion | CraftingError::Bug => {
-                            println!("Error {:?}", res)
-                        }
-                        _ => {}
-                    }
-                }
-            } else {
-                test_all(new_process_test, depth - 1, all);
-            }
-        }
-    }
-    for mut part in PARTS {
-        all.remove(&part.brew(Item::Potion(0)).unwrap());
-        for part_2 in PARTS {
-            let mut part = part;
-            all.remove(&part.brew(part_2).unwrap());
-            for part_3 in PARTS {
-                let mut part = part;
-                all.remove(&part.brew(part_3).unwrap());
-                for part_4 in PARTS {
-                    let mut part = part;
-                    all.remove(&part.brew(part_4).unwrap());
                 }
             }
         }
     }
-    for depth in 0..4 {
-        for part in PARTS {
-            test_all(part, depth, &mut all);
-        }
-        println!("after Part({}): {}", depth, all.len());
-        println!("{:?}", all);
+    add_all_process(Tags::EMPTY, 2, &mut all, &mut found);
+    let mut new_found = IndexSet::new();
+    for potion in found {
+        add_all_process(Tags(potion), 2, &mut all, &mut new_found)
     }
+    let mut all_effects = PotionEffect::iter().collect::<std::collections::HashSet<PotionEffect>>();
+    let potions = ron::from_str::<
+        std::collections::HashMap<u8, std::collections::HashSet<PotionEffect>>,
+    >(&std::fs::read_to_string("potion.effects").unwrap())
+    .unwrap();
+    for potion in 0..=255 {
+        if all.contains(&potion) {
+            continue;
+        }
+        for effects in potions.get(&potion).unwrap() {
+            all_effects.remove(effects);
+        }
+    }
+    println!("Need ({}) {:?}", all.len(), all);
+    println!("Can't Get {:?}", all_effects);
 }
 
 fn freeze(val: u8) -> u8 {
@@ -275,64 +329,66 @@ fn dice(val: u8) -> u8 {
     val >> 4 | val << 4
 }
 
+// #[derive(
+//     Debug, strum_macros::EnumIter, Clone, Copy, PartialEq, strum_macros::EnumString, ValueEnum,
+// )]
+// pub enum Process {
+//     /// Spin the item real fast CCW this will rotate all the bits to the left atlast 1 up to 4 unless a 1 hits an edge
+//     SpinLeft,
+//     /// Spin the item real fast CW this will rotate all the bits to the left atlast 1 up to 4 unless a 1 hits an edge
+//     SpinRight,
+//     /// Put it in the freezer; XOr 11110000
+//     Freeze,
+//     /// Set it on Fire; XOr 00001111
+//     Burn,
+//     /// Cut it into big chunks; Flip around Middle 12345678 -> 432187654
+//     Dice,
+//     /// Chop it into odd bits; XOr with 01010101
+//     Chop,
+//     /// Grind it into even bits; XOr with 10101010
+//     Grind,
+//     /// Shake it up; not
+//     Shake,
+//     /// Blend it up; Xor 11000011
+//     Blend,
+//     /// Mix it around; Xor 00111100
+//     Mix,
+//     /// Give it a lick so see whats in it
+//     Taste,
+// }
+
 #[derive(
     Debug, strum_macros::EnumIter, Clone, Copy, PartialEq, strum_macros::EnumString, ValueEnum,
 )]
 pub enum Process {
-    /// Spin the item real fast CCW this will rotate all the bits to the left atlast 1 up to 4 unless a 1 hits an edge
-    SpinLeft,
-    /// Spin the item real fast CW this will rotate all the bits to the left atlast 1 up to 4 unless a 1 hits an edge
-    SpinRight,
-    /// Put it in the freezer; XOr 11110000
-    Freeze,
-    /// Set it on Fire; XOr 00001111
-    Burn,
-    /// Cut it into big chunks; Flip around Middle 12345678 -> 432187654
-    Dice,
-    /// Chop it into odd bits; XOr with 01010101
-    Chop,
-    /// Grind it into even bits; XOr with 10101010
-    Grind,
-    /// Shake it up; not
-    Shake,
-    /// Blend it up; Xor 11000011
-    Blend,
-    /// Mix it around; Xor 00111100
-    Mix,
-    /// Give it a lick so see whats in it
-    Taste,
-}
-
-#[test]
-fn test_can_do() {
-    let mut item = Item::Intimidate(0, 0);
-    item.apply_process(Process::Burn).unwrap();
-    assert!(!item.can_do_process().contains(&Process::Burn));
-    assert!(!item.can_do_process().contains(&Process::Freeze));
-    println!("can do {:?}", item.can_do_process());
+    /// See What Tags are in it
+    Test,
+    /// Collect Volatile Tags
+    Distill = 1,
+    /// Collect Heavy Tags
+    Condense = 1 << 1,
+    /// Removes Cold Tags
+    Boil = 1 << 2,
+    /// Removes Hot Tags
+    Freeze = 1 << 3,
+    /// Removes Unstable Tags
+    Age = 1 << 4,
+    /// Removes Volatile Tags add Fire
+    Burn = 1 << 5,
+    // Removes Heavy Tags
+    Spin = 1 << 6,
+    /// Remove Elemental
+    Steam,
 }
 
 impl Process {
     pub fn can_do(val: u8) -> Vec<Process> {
         let mut vals = Vec::new();
         for process in Process::iter() {
-            if u8::from(process) & val == 0 {
+            if process as u8 & val == 0 {
                 vals.push(process)
             }
         }
         vals
-    }
-}
-
-impl From<Process> for u8 {
-    fn from(value: Process) -> Self {
-        match value {
-            Process::SpinLeft | Process::SpinRight => 1 << 3,
-            Process::Freeze | Process::Burn => 1,
-            Process::Dice => 1 << 5,
-            Process::Chop | Process::Grind => 2,
-            Process::Shake | Process::Taste => 0,
-            Process::Blend | Process::Mix => 1 << 4,
-        }
     }
 }

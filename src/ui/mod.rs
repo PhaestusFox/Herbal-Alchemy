@@ -40,12 +40,7 @@ pub trait UiItem {
     }
 }
 
-const PANNEL_IDS: [&'static str; 4] = [
-    "#loading",
-    "#shop",
-    ".menu",
-    "#inventory",
-];
+const PANNEL_IDS: [&'static str; 4] = ["#loading", "#shop", ".menu", "#inventory"];
 
 fn hide_pannel<const PANNEL_ID: usize>(mut elements: Elements) {
     elements.select(PANNEL_IDS[PANNEL_ID]).add_class("hidden");

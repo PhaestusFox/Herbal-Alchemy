@@ -23,7 +23,7 @@ impl Plugin for TabPlugin {
 pub struct CurrentPotion(pub Item);
 impl FromWorld for CurrentPotion {
     fn from_world(_: &mut World) -> Self {
-        CurrentPotion(Item::Potion(0))
+        CurrentPotion(Item::Potion(Tags::EMPTY))
     }
 }
 
@@ -343,27 +343,27 @@ fn update_shop(
     }
 }
 
-fn hand_in(
-    item: Query<(&Item, &Slot), With<SelectedSlot>>,
-    mut target_potion: ResMut<crate::crafting::potions::TargetPotion>,
-    button: Query<(&Interaction, &ShopButton), Changed<Interaction>>,
-    mut events: EventWriter<InventoryEvent>,
-) {
-    for (interaction, button) in &button {
-        if let Interaction::Clicked = interaction {
-            match button {
-                ShopButton::Skip => *target_potion = crate::crafting::potions::TargetPotion::new(),
-                ShopButton::TurnIn => {
-                    let Ok((Item::Potion(item), slot)) = item.get_single() else {return;};
-                    if target_potion.is_match(*item) {
-                        events.send(InventoryEvent::RemoveItem(*slot));
-                        *target_potion = crate::crafting::potions::TargetPotion::new();
-                    }
-                }
-            }
-        }
-    }
-}
+// fn hand_in(
+//     item: Query<(&Item, &Slot), With<SelectedSlot>>,
+//     mut target_potion: ResMut<crate::crafting::potions::TargetPotion>,
+//     button: Query<(&Interaction, &ShopButton), Changed<Interaction>>,
+//     mut events: EventWriter<InventoryEvent>,
+// ) {
+//     for (interaction, button) in &button {
+//         if let Interaction::Clicked = interaction {
+//             match button {
+//                 ShopButton::Skip => *target_potion = crate::crafting::potions::TargetPotion::new(),
+//                 ShopButton::TurnIn => {
+//                     let Ok((Item::Potion(item), slot)) = item.get_single() else {return;};
+//                     if target_potion.is_match(*item) {
+//                         events.send(InventoryEvent::RemoveItem(*slot));
+//                         *target_potion = crate::crafting::potions::TargetPotion::new();
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 
 fn change_tab(
     query: Query<(&Interaction, &Tab), Changed<Interaction>>,

@@ -37,11 +37,11 @@ pub enum ConstHandles {
     WaveMaterial = 0,
 }
 
-impl Into<HandleId> for ConstHandles {
-    fn into(self) -> HandleId {
+impl From<ConstHandles> for HandleId {
+    fn from(val: ConstHandles) -> HandleId {
         HandleId::Id(
             uuid::uuid!("c329f1c4-7eaf-497a-80da-bb4717ea50b9"),
-            self as u64,
+            val as u64,
         )
     }
 }

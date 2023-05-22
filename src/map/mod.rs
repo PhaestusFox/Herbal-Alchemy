@@ -25,7 +25,7 @@ pub enum HexNeighbour {
     One,
     Two,
     Three,
-    For,
+    Four,
     Five,
     Six,
 }
@@ -241,9 +241,9 @@ impl TypeUuid for MapCell {
     const TYPE_UUID: uuid::Uuid = uuid::uuid!("ae52aa38-f993-481e-b9b5-554d4ee2da22");
 }
 
-impl Into<HandleId> for MapCell {
-    fn into(self) -> HandleId {
-        format!("objs/Pots.obj#{:?}", self).into()
+impl From<MapCell> for HandleId {
+    fn from(val: MapCell) -> HandleId {
+        format!("objs/Pots.obj#{:?}", val).into()
     }
 }
 

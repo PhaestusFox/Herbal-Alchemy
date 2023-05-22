@@ -1,6 +1,6 @@
-use crate::inventory::SelectedSlot;
 use crate::map::MapCell;
 use crate::prelude::*;
+use crate::{crafting::tags::TagNames, inventory::SelectedSlot};
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use serde::{Deserialize, Serialize};
 mod palm;
@@ -45,6 +45,14 @@ pub enum Plant {
     Palm,
 }
 
+impl Ingredient for Plant {
+    fn get_tags(&self) -> Tags {
+        match self {
+            Plant::Palm => Tags::new([TagNames::Tropical]),
+        }
+    }
+}
+
 impl Plant {
     fn spawn(&self, cell: &MapCell, parent: EntityCommands) {
         match self {
@@ -82,6 +90,22 @@ pub enum PlantPart {
     Fruit = 20,
     Bark = 18,
     Auxiliary = 1 << 5,
+}
+
+impl Ingredient for PlantPart {
+    fn get_tags(&self) -> Tags {
+        use TagNames::*;
+        match self {
+            PlantPart::Seed => Tags::new([Life]),
+            PlantPart::Leaf => Tags::new([Air]),
+            PlantPart::Root => Tags::new([Water, Earth]),
+            PlantPart::Stem => Tags::new([Fibrous]),
+            PlantPart::Flower => todo!(),
+            PlantPart::Fruit => Tags::new([Water, Time]),
+            PlantPart::Bark => Tags::new([Fire]),
+            PlantPart::Auxiliary => todo!(),
+        }
+    }
 }
 
 fn spawn_plant(mut commands: Commands, plants: Query<(Entity, &MapCell, &Plant), Added<Plant>>) {

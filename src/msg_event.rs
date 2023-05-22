@@ -1,8 +1,8 @@
 use belly::build::{widget, FromWorldAndParams};
+use belly::prelude::*;
 use bevy::log::prelude::*;
 use bevy::log::Level;
 use bevy::prelude::*;
-use belly::prelude::*;
 
 pub struct MsgPlugin;
 impl Plugin for MsgPlugin {
@@ -22,9 +22,7 @@ pub struct PlayerMessage {
     level: Level,
 }
 
-fn log_test(
-    mut events: EventWriter<PlayerMessage>
-) {
+fn log_test(mut events: EventWriter<PlayerMessage>) {
     events.send(PlayerMessage::error("You are in debug mode"));
 }
 
@@ -82,10 +80,8 @@ impl Default for MsgTime {
     }
 }
 
-fn spawn_msg_space(
-    mut commands: Commands
-) {
-    commands.add(eml!{
+fn spawn_msg_space(mut commands: Commands) {
+    commands.add(eml! {
         <div id="Msgs">
 
         </div>
@@ -111,18 +107,14 @@ fn spawn_msg(
         }
         let msg = event.msg.clone();
         let color = event.color;
-        elements.select("#Msgs").add_child(eml!{
+        elements.select("#Msgs").add_child(eml! {
             <ui_msg c:msg color=color value=msg />
         });
     }
 }
 
-fn despawn_msg(
-    mut commands: Elements,
-    time: Res<Time>,
-    mut query: Query<(Entity, &mut MsgTime)>
-) {
-    for (entity,mut timer) in &mut query {
+fn despawn_msg(mut commands: Elements, time: Res<Time>, mut query: Query<(Entity, &mut MsgTime)>) {
+    for (entity, mut timer) in &mut query {
         timer.0.tick(time.delta());
         if timer.0.finished() {
             commands.entity(entity).remove();
@@ -146,5 +138,8 @@ fn ui_msg(ctx: &mut belly::build::WidgetContext) {
     let this = ctx.this().id();
     ctx.add(from!(this, UiMsg: value) >> to!(this, Text:sections[0].value));
     ctx.add(from!(this, UiMsg: color) >> to!(this, Text:sections[0].style.color));
-    ctx.insert((belly::build::TextElementBundle::default(), MsgTime::default()));
+    ctx.insert((
+        belly::build::TextElementBundle::default(),
+        MsgTime::default(),
+    ));
 }

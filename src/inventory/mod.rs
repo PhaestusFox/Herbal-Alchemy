@@ -128,6 +128,10 @@ fn select_item(
     }
 }
 
+pub trait Ingredient {
+    fn get_tags(&self) -> Tags;
+}
+
 #[derive(
     Component,
     Reflect,
@@ -144,18 +148,29 @@ fn select_item(
 pub enum Item {
     #[default]
     Empty,
-    Potion(u8),
+    Potion(Tags),
     Ingredient(Plant, PlantPart),
-    Intimidate(u8, u8),
+    Intimidate(Tags),
+}
+
+impl Ingredient for Item {
+    fn get_tags(&self) -> Tags {
+        match self {
+            Item::Empty => Tags(0),
+            Item::Potion(tags) => *tags,
+            Item::Ingredient(plant, part) => plant.get_tags() | part.get_tags(),
+            Item::Intimidate(tags) => *tags,
+        }
+    }
 }
 
 impl UiItem for Item {
     fn icon_path(&self) -> &'static str {
         match self {
             Item::Empty => "icons/empty.png",
-            Item::Potion(0) => "icons/potion_5.png",
-            Item::Potion(255) => "icons/potion_d.png",
-            Item::Potion(id) => match id % 8 {
+            Item::Potion(Tags::EMPTY) => "icons/potion_5.png",
+            Item::Potion(Tags(255)) => "icons/potion_d.png",
+            Item::Potion(id) => match id.0 % 8 {
                 0 => "icons/potion_0.png",
                 1 => "icons/potion_1.png",
                 2 => "icons/potion_2.png",
@@ -180,8 +195,8 @@ impl UiItem for Item {
                     }
                 },
             },
-            Item::Intimidate(_, effect) => {
-                if effect & 0xf > (effect >> 4) & 0xf {
+            Item::Intimidate(tags) => {
+                if tags.has_tag(crate::crafting::tags::TagNames::Fire) {
                     "icons/ash.png"
                 } else {
                     "icons/cube.png"
@@ -192,12 +207,12 @@ impl UiItem for Item {
 
     fn background_color(&self) -> Color {
         match self {
-            Item::Potion(0) => Color::BLUE,
-            Item::Potion(255) => Color::WHITE,
-            Item::Potion(id) | Item::Intimidate(id, _) => Color::rgb_u8(
-                (id << 4) & 0b11110000,
-                (id << 2) & 0b11110000,
-                id & 0b11110000 as u8,
+            Item::Potion(Tags::EMPTY) => Color::BLUE,
+            Item::Potion(Tags(255)) => Color::WHITE,
+            Item::Potion(id) | Item::Intimidate(id) => Color::rgb_u8(
+                (id.0 << 4) & 0b11110000,
+                (id.0 << 2) & 0b11110000,
+                id.0 & 0b11110000 as u8,
             ),
             _ => Color::WHITE,
         }
@@ -210,18 +225,21 @@ impl Item {
         match self {
             Item::Empty => return Err(CraftingError::NoItem),
             Item::Potion(_) => {}
-            Item::Ingredient(_, part) => *self = Item::Potion(*part as u8),
-            Item::Intimidate(part, _) => *self = Item::Potion(*part),
+            Item::Ingredient(plant, part) => {
+                *self = Item::Potion(plant.get_tags() | part.get_tags())
+            }
+            Item::Intimidate(part) => *self = Item::Potion(*part),
         }
         let Item::Potion(val) = self else {return Err(CraftingError::Bug);};
         let other = match other {
             Item::Empty => return Err(CraftingError::NoItem),
             Item::Potion(val) => val,
-            Item::Ingredient(_, part) => part as u8,
-            Item::Intimidate(part, _) => part,
+            Item::Ingredient(plant, part) => plant.get_tags() | part.get_tags(),
+            Item::Intimidate(part) => part,
         };
-        *val |= other;
-        Ok(*val)
+        error!("self({:?}) | Other({:?})", val, other);
+        *val = *val | other;
+        Ok(val.0)
     }
 
     pub fn taste(&self) -> String {
@@ -229,10 +247,10 @@ impl Item {
             Item::Empty => String::from("You lick an empty part of the ui. you are suddently aware you are in a video game;\n you decide to report this bug you just found to you god Phox;"),
             Item::Potion(val) => {
                 use crate::crafting::potions::PotionEffect::*;
-                if *val == 0 {
+                if val.0 == 0 {
                     return String::from("It's Just Water");
                 }
-                if *val == 255 {
+                if val.0 == 255 {
                     return format!("That Potion has the effect {}; good thing you are an immortal wizard", InstantDeath);
                 }
                 let effects = PotionEffect::get_potion_effects(*val);
@@ -257,14 +275,14 @@ impl Item {
             },
             #[allow(unreachable_patterns)]
             Item::Ingredient(_, _) => String::from("you tentatively lick the mystiriuse plant, as soon as you toung toches it you are suddently aware you are in a video game;\n you decide to report this bug you just found to you god Phox;"),
-            Item::Intimidate(val, _) => format!("you lick the item; you get the feeling if you add this to a potion it would have the effect\n\n{:08b}\n\n by looking at it you can tell it can still have the following processes applied \n [{:?}]", val, self.can_do_process()),
+            Item::Intimidate(val) => format!("you lick the item; you get the feeling it has the tags\n\n{:?}\n\n by looking at it you can tell it can still have the following processes applied \n", val.get_tag_names()),
         }
     }
 
     pub fn tool_tip_text(&self) -> String {
         match self {
             Item::Empty => String::from("An Empty Inventory Slot"),
-            Item::Potion(0) => String::from("A bottle of water"),
+            Item::Potion(Tags::EMPTY) => String::from("A bottle of water"),
             Item::Potion(id) => {
                 let effects = PotionEffect::get_potion_effects(*id);
                 let mut rep = String::from("Its a Potion of ");
@@ -279,23 +297,17 @@ impl Item {
                 }
                 rep
             }
-            Item::Ingredient(plant, part) => plant.tool_tip_text(*part),
-            Item::Intimidate(id, _) => {
+            Item::Ingredient(plant, part) => {
+                let mut str = plant.tool_tip_text(*part);
+                str.push_str(&format!("{:?}", self.get_tags()));
+                str
+            }
+            Item::Intimidate(id) => {
                 format!(
-                    "Someting you cooked up in the Lab: {:08b}\n you can still:\n {:?}",
-                    id,
-                    self.can_do_process()
+                    "Someting you cooked up in the Lab: {:?}\n",
+                    id.get_tag_names(),
                 )
             }
-        }
-    }
-
-    pub fn can_do_process(&self) -> Vec<Process> {
-        match self {
-            Item::Empty => vec![],
-            Item::Potion(_) => vec![Process::Taste],
-            Item::Ingredient(_, _) => <Process as strum::IntoEnumIterator>::iter().collect(),
-            Item::Intimidate(_, mech) => Process::can_do(*mech),
         }
     }
 }
@@ -304,6 +316,7 @@ pub enum InventoryEvent {
     AddItem(Item),
     RemoveItem(Slot),
     MoveItem(Slot, Slot),
+    InsertItem(Item, Slot),
 }
 
 #[derive(
@@ -488,6 +501,9 @@ fn item_events(
                     inventory.0.insert(*from, old);
                 }
             }
+            InventoryEvent::InsertItem(item, slot) => {
+                inventory.insert_item(*slot, *item);
+            }
         }
     }
 }
@@ -517,6 +533,9 @@ pub struct Inventory(pub HashMap<Slot, Item>);
 impl Inventory {
     pub fn get(&self, slot: &Slot) -> Option<Item> {
         self.0.get(slot).cloned()
+    }
+    pub fn insert_item(&mut self, slot: Slot, item: Item) {
+        self.0.insert(slot, item);
     }
 }
 

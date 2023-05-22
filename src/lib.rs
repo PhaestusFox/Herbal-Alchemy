@@ -33,6 +33,8 @@ mod prelude {
     pub use super::shader::CustomMaterial;
     pub use crate::crafting::potions::PotionEffect;
     pub use crate::crafting::potions::TargetPotion;
+    pub use crate::crafting::tags::Tags;
+    pub use crate::inventory::Ingredient;
     pub use crate::inventory::SelectedSlot;
     pub use crate::msg_event::PlayerMessage;
     pub use crate::settings::*;

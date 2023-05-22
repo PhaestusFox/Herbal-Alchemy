@@ -28,10 +28,16 @@ pub(super) fn open_shop(
                         let Some(item) = inventory.get(&Slot::Shop) else {world.send_event(PlayerMessage::say("Add a potion to hand in into the slot", Color::YELLOW)); return;};
 
                         let Item::Potion(item) = item else {world.send_event(PlayerMessage::say("Item in slot must be potion", Color::YELLOW)); return;};
-                        if target.is_match(item) {
-                            //todo return item as reward
-                            world.send_event(InventoryEvent::RemoveItem(Slot::Shop));
-                            world.insert_resource(crate::crafting::potions::TargetPotion::new());
+                        match target.is_match(item) {
+                            Ok(_) => {
+                                warn!("You Did It");
+                                //todo return item as reward
+                                world.send_event(InventoryEvent::RemoveItem(Slot::Shop));
+                                world.insert_resource(crate::crafting::potions::TargetPotion::new());
+                            },
+                            Err(err) => {
+                                world.send_event(PlayerMessage::error(err));
+                            }
                         }
                     }
                 )

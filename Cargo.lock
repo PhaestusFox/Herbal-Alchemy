@@ -2536,6 +2536,7 @@ dependencies = [
  "iyes_progress",
  "lazy_static",
  "rand",
+ "ron",
  "serde",
  "strum",
  "strum_macros",
